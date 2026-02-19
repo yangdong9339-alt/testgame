@@ -279,6 +279,9 @@ let player={};
 let cam={x:0,y:0};
 let pickupTarget=null,pickupProgress=0,pickupHolding=false;
 let selectedInvIdx=null;
+// Touch
+const isTouchDevice=()=>navigator.maxTouchPoints>0;
+let joystickDelta={x:0,y:0},joystickActive=false,joystickOrigin={x:0,y:0};
 
 // ═══════════════════════════════════════════════════════════
 // MAP GENERATION
@@ -1085,7 +1088,6 @@ function cycleWeapon(){
 }
 
 // Camera
-let cam={x:0,y:0};
 function updateCamera(){
   cam.x=player.wx-W/2;cam.y=player.wy-H/2;
   cam.x=Math.max(0,Math.min(MAP_W-W,cam.x));
@@ -1099,8 +1101,6 @@ function normalize(dx,dy){const d=Math.sqrt(dx*dx+dy*dy)||1;return[dx/d,dy/d];}
 // ═══════════════════════════════════════════════════════════
 // TOUCH JOYSTICK
 // ═══════════════════════════════════════════════════════════
-const isTouchDevice=()=>navigator.maxTouchPoints>0;
-let joystickDelta={x:0,y:0},joystickActive=false,joystickOrigin={x:0,y:0};
 
 function initJoystick(){
   const base=document.getElementById('joystick-base');
