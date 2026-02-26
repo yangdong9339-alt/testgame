@@ -679,7 +679,11 @@ const ALL_ITEMS=[...WANDS,...ARMORS,...CRYSTALS];
 // Market prices fluctuate each visit
 let marketPrices={};
 function refreshMarket(){
-  ALL_ITEMS.forEach(w=>{
+  // Market: wands + armors + boots + acc + tier1-2 crystals only
+  const marketItems=ALL_ITEMS.filter(w=>
+    w.type!=='crystal' || w.tier<=2
+  );
+  marketItems.forEach(w=>{
     const base=w.basePrice;
     const factor=0.8+Math.random()*0.4;
     marketPrices[w.id]=Math.round(base*factor);
@@ -838,17 +842,51 @@ const ENEMY_TYPES=[
   {name:'ARCHER', hp:70,  spd:0.8,dmg:14, color:'#f59e0b',r:11,xp:30,elev:2,ranged:true,range:200},
 ];
 
+
+// Roll enemy loot table at spawn time
+// Each enemy drops: 1 random crystal stack + 20% chance weapon/armor
+function rollEnemyDrops(){
+  const drops=[];
+  // Always drop 2-3 crystal stacks
+  const numCrystalDrops=2+Math.floor(Math.random()*2);
+  for(let i=0;i<numCrystalDrops;i++){
+    const elem=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
+    // Higher tier crystals rarer: 60% t1, 25% t2, 12% t3, 3% t4
+    const r=Math.random();
+    const tier=r<0.6?1:r<0.85?2:r<0.97?3:4;
+    const crystal=getCrystal(elem,tier);
+    if(crystal){
+      const qty=3+Math.floor(Math.random()*8);
+      drops.push(Object.assign({},crystal,{qty}));
+    }
+  }
+  // 25% chance: drop a weapon
+  if(Math.random()<0.25){
+    const w=WANDS[Math.floor(Math.random()*WANDS.length)];
+    drops.push(Object.assign({},w));
+  }
+  // 20% chance: drop armor/boots/acc
+  if(Math.random()<0.20){
+    const pool=[...ARMORS];
+    const a=pool[Math.floor(Math.random()*pool.length)];
+    drops.push(Object.assign({},a));
+  }
+  return drops;
+}
+
 function spawnEnemies(){
   enemies=[];
-  for(let i=0;i<40;i++){
+  for(let i=0;i<18;i++){
     let wx,wy,tries=0;
     do{wx=200+Math.random()*(MAP_W-400);wy=200+Math.random()*(MAP_H-400);tries++;}
     while((isSolid(wx,wy)||dist(wx,wy,160,160)<220)&&tries<60);
     const t=ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
     const spawnElev=t.elev||getElev(wx,wy);
+    // Pre-roll enemy drops at spawn
+    const drops=rollEnemyDrops();
     enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
       elev:spawnElev,attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
-      dropWand:Math.random()<0.14,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,
+      drops,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,
       phase:Math.random()*Math.PI*2});
   }
 }
@@ -1246,13 +1284,21 @@ function updateProjectiles(dt){
           player.xp+=e2.xp;
           addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
           spawnParticles(e2.wx,e2.wy,e2.color,20,4);
-          if(e2.dropWand){
-              const rr2=Math.random();
-              const pool=rr2<0.25?ARMORS:rr2<0.55?CRYSTALS:WANDS;
-              const w=pool[Math.floor(Math.random()*pool.length)];
-              droppedWands.push({wx:e2.wx,wy:e2.wy,wand:w});
-              addLog(`掉落 ${w.name}!`,'loot');
-            }
+          // Drop all pre-rolled items
+          if(e2.drops&&e2.drops.length>0){
+            const angle=Math.random()*Math.PI*2;
+            e2.drops.forEach((item,di)=>{
+              const a=angle+di*0.8;
+              const spread=12+di*8;
+              droppedWands.push({
+                wx:e2.wx+Math.cos(a)*spread,
+                wy:e2.wy+Math.sin(a)*spread,
+                wand:Object.assign({},item)
+              });
+              const label=item.type==='crystal'?`${item.name}×${item.qty||1}`:item.name;
+              addLog(`掉落: ${label}`,'loot');
+            });
+          }
           enemies.splice(enemies.indexOf(e2),1);
           checkLevelUp();
         });
@@ -1434,7 +1480,11 @@ function renderHomebase(){
   // ── MARKET ──
   const ml=document.getElementById('market-list');
   ml.innerHTML='';
-  ALL_ITEMS.forEach(w=>{
+  // Market: wands + armors + boots + acc + tier1-2 crystals only
+  const marketItems=ALL_ITEMS.filter(w=>
+    w.type!=='crystal' || w.tier<=2
+  );
+  marketItems.forEach(w=>{
     const price=marketPrices[w.id]||w.basePrice;
     const trend=price>w.basePrice?'up':'down';
     const trendIcon=trend==='up'?'▲':'▼';
@@ -2123,15 +2173,16 @@ function loop(ts){
     checkExtract();
 
     // Respawn
-    if(enemies.length<10){
-      for(let i=0;i<3;i++){
+    if(enemies.length<8){
+      for(let i=0;i<2;i++){
         let wx,wy,tries=0;
         do{wx=100+Math.random()*(MAP_W-200);wy=100+Math.random()*(MAP_H-200);tries++;}
         while((isSolid(wx,wy)||dist(wx,wy,player.wx,player.wy)<280)&&tries<40);
         const t=ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
+        const drops2=rollEnemyDrops();
         enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
           elev:getElev(wx,wy),attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
-          dropWand:Math.random()<.12,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,phase:0});
+          drops:drops2,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,phase:0});
       }
     }
   }else if(gameState==='dead'){
