@@ -50,12 +50,14 @@ canvas{display:block}
 #inv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #inv-title{font-size:8px;color:#5a5060;letter-spacing:2px}
 #inv-weight{font-size:8px;color:#6a5a4a}
-#inv-grid{display:grid;grid-template-columns:repeat(6,30px);grid-template-rows:repeat(4,30px);gap:2px}
+#inv-grid{display:grid;grid-template-columns:repeat(6,30px);grid-template-rows:repeat(4,30px);gap:2px;position:relative}
 .inv-cell{width:30px;height:30px;border:1px solid #1e1e2a;background:#0d0d14;position:relative}
 .inv-cell.occupied{border-color:#2a2a3a}
-.inv-item-block{position:absolute;top:0;left:0;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;z-index:2}
+.inv-item-block{position:absolute;border:1px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;cursor:pointer;z-index:2;gap:0px}
 .inv-item-block:hover{filter:brightness(1.3)}
 .inv-item-block.selected{box-shadow:0 0 0 2px #fbbf24}
+.inv-item-block.is-equipped{box-shadow:0 0 0 2px #4ade80,0 0 10px #4ade8055}
+.inv-item-name{font-size:5px;color:#ffffff88;line-height:1;padding:0 1px;text-align:center;overflow:hidden;max-width:100%}
 #inv-actions{display:flex;gap:4px;margin-top:6px}
 .inv-btn{flex:1;padding:4px;font-family:'Share Tech Mono',monospace;font-size:8px;background:none;border:1px solid #2a2a35;color:#c8b89a;cursor:pointer;letter-spacing:1px}
 .inv-btn:hover{border-color:#fbbf24;color:#fbbf24}
@@ -192,15 +194,12 @@ canvas{display:block}
     <div id="hb-body">
       <!-- Storage -->
       <div id="hb-storage">
-        <div class="hb-section-title">STASH</div>
+        <div class="hb-section-title">STASH — 点选物品后点LOADOUT槽位放入</div>
         <div id="storage-grid"></div>
-        <div id="hb-storage-actions">
-          <button class="hb-action-btn" id="btn-to-loadout" onclick="moveToLoadout()" disabled>→ LOADOUT</button>
-          <button class="hb-action-btn" id="btn-from-loadout" onclick="moveFromLoadout()" disabled>← STASH</button>
-        </div>
         <div id="loadout-section">
-          <div class="hb-section-title">LOADOUT (带入下局)</div>
+          <div class="hb-section-title" style="margin-top:12px">LOADOUT · 带入下局 (最多3件) <span id="loadout-hint" style="color:#fbbf24;font-size:7px"></span></div>
           <div id="loadout-grid"></div>
+          <div style="font-size:7px;color:#3a3a4a;margin-top:4px">点击LOADOUT中的物品可退回仓库</div>
         </div>
       </div>
       <!-- Market -->
@@ -251,10 +250,33 @@ const WANDS=[
   {id:'blood',   name:'BLOOD LANCE', icon:'🩸',dmg:[18,28],range:150,spd:0.8,color:'#dc2626',proj:'#f87171',desc:'血矛·高穿透', size:[1,3],basePrice:220,pierce:true,aoe:0},
 ];
 
+
+// ═══════════════════════════════════════════════════════════
+// ARMOR DATA
+// ═══════════════════════════════════════════════════════════
+const ARMORS=[
+  // Robes (defense) — 1×2 grid
+  {id:'robe1', name:'TATTERED ROBE',  icon:'👘',type:'armor',tier:1,def:3, color:'#78716c',size:[1,2],basePrice:60, desc:'防御+3'},
+  {id:'robe2', name:'WOVEN MANTLE',   icon:'🥻',type:'armor',tier:2,def:7, color:'#a16207',size:[1,2],basePrice:130,desc:'防御+7'},
+  {id:'robe3', name:'ARCANE VESTMENT',icon:'🩱',type:'armor',tier:3,def:13,color:'#6366f1',size:[1,2],basePrice:240,desc:'防御+13'},
+  {id:'robe4', name:'VOID SHROUD',    icon:'🦺',type:'armor',tier:4,def:22,color:'#a855f7',size:[1,2],basePrice:400,desc:'防御+22'},
+  // Boots (move speed) — 1×2 grid
+  {id:'boot1', name:'WORN SANDALS',   icon:'👡',type:'boots',tier:1,spd:0.3,color:'#78716c',size:[1,2],basePrice:50, desc:'速度+0.3'},
+  {id:'boot2', name:'LEATHER BOOTS',  icon:'👢',type:'boots',tier:2,spd:0.6,color:'#92400e',size:[1,2],basePrice:110,desc:'速度+0.6'},
+  {id:'boot3', name:'SWIFT TREADS',   icon:'🥾',type:'boots',tier:3,spd:1.0,color:'#0891b2',size:[1,2],basePrice:200,desc:'速度+1.0'},
+  {id:'boot4', name:'PHANTOM STEPS',  icon:'👟',type:'boots',tier:4,spd:1.6,color:'#7c3aed',size:[1,2],basePrice:350,desc:'速度+1.6'},
+  // Accessories (bonus effects) — 1×1 grid
+  {id:'acc1',  name:'COPPER RING',    icon:'💍',type:'acc',  tier:1,maxHp:15,color:'#78716c',size:[1,1],basePrice:80, desc:'生命+15'},
+  {id:'acc2',  name:'SILVER AMULET',  icon:'📿',type:'acc',  tier:2,maxHp:30,color:'#94a3b8',size:[1,1],basePrice:160,desc:'生命+30'},
+  {id:'acc3',  name:'GOLD PENDANT',   icon:'🏅',type:'acc',  tier:3,maxHp:50,xpBonus:0.2,color:'#f59e0b',size:[1,1],basePrice:280,desc:'生命+50·经验+20%'},
+  {id:'acc4',  name:'SOUL CRYSTAL',   icon:'💎',type:'acc',  tier:4,maxHp:80,xpBonus:0.4,color:'#22d3ee',size:[1,1],basePrice:500,desc:'生命+80·经验+40%'},
+];
+const ALL_ITEMS=[...WANDS,...ARMORS];
+
 // Market prices fluctuate each visit
 let marketPrices={};
 function refreshMarket(){
-  WANDS.forEach(w=>{
+  ALL_ITEMS.forEach(w=>{
     const base=w.basePrice;
     const factor=0.8+Math.random()*0.4;
     marketPrices[w.id]=Math.round(base*factor);
@@ -286,24 +308,85 @@ let joystickDelta={x:0,y:0},joystickActive=false,joystickOrigin={x:0,y:0};
 // ═══════════════════════════════════════════════════════════
 // MAP GENERATION
 // ═══════════════════════════════════════════════════════════
+// ── Smooth noise helpers ──
+function smoothNoise(x,y,seed){
+  // Simple smooth value noise with bilinear interpolation
+  const ix=Math.floor(x),iy=Math.floor(y);
+  const fx=x-ix,fy=y-iy;
+  const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+  function h(a,b){
+    let n=((a*1619+b*31337+seed*6971)^(a*1619+b*31337+seed*6971)>>8)*0.00000023283;
+    return Math.sin(n*127.1+n*311.7)*43758.5453%1;
+  }
+  return h(ix,iy)*(1-u)*(1-v)+h(ix+1,iy)*u*(1-v)+h(ix,iy+1)*(1-u)*v+h(ix+1,iy+1)*u*v;
+}
+function fbm(x,y,seed,oct=4){
+  let v=0,amp=0.5,freq=1,max=0;
+  for(let i=0;i<oct;i++){v+=smoothNoise(x*freq,y*freq,seed+i*100)*amp;max+=amp;amp*=0.5;freq*=2;}
+  return v/max;
+}
+
+let heightMap=[];  // continuous 0..1 height per tile
+let wallMask=[];   // 1=solid wall
+
 function genMap(){
-  tileMap=[];elevMap=[];
+  const seed=Math.floor(Math.random()*9999);
+  tileMap=[];elevMap=[];heightMap=[];wallMask=[];
+
+  // Generate continuous height field
+  for(let r=0;r<ROWS;r++){
+    heightMap[r]=[];wallMask[r]=[];
+    for(let c=0;c<COLS;c++){
+      const hv=fbm(c/12,r/12,seed);
+      heightMap[r][c]=hv;
+      // Walls from separate high-freq noise
+      const wn=fbm(c/4,r/4,seed+500,3);
+      wallMask[r][c]=(wn>0.72&&r>1&&r<ROWS-2&&c>1&&c<COLS-2)?1:0;
+    }
+  }
+
+  // Derive tileMap and elevMap from height
   for(let r=0;r<ROWS;r++){
     tileMap[r]=[];elevMap[r]=[];
     for(let c=0;c<COLS;c++){
       if(r===0||r===ROWS-1||c===0||c===COLS-1){tileMap[r][c]=1;elevMap[r][c]=0;continue;}
-      const n=Math.sin(r*7.3+c*13.1)*Math.cos(r*3.7-c*5.9);
-      tileMap[r][c]=n>0.58?1:0;
-      // Elevation: clusters based on secondary noise
-      const e2=Math.sin(r*2.1+c*3.7)*Math.cos(r*1.9-c*2.3);
-      elevMap[r][c]=e2>0.5?2:e2>0.1?1:0;
-      if(tileMap[r][c]===1)elevMap[r][c]=0;
+      tileMap[r][c]=wallMask[r][c];
+      const h=heightMap[r][c];
+      elevMap[r][c]=tileMap[r][c]?0:h>0.72?2:h>0.52?1:0;
     }
   }
-  // Clear spawn
-  for(let r=2;r<8;r++)for(let c=2;c<12;c++){tileMap[r][c]=0;elevMap[r][c]=0;}
-  // Clear extract
-  for(let r=ROWS-7;r<ROWS-1;r++)for(let c=COLS-7;c<COLS-1;c++){tileMap[r][c]=0;elevMap[r][c]=0;}
+  // Clear spawn area
+  for(let r=1;r<9;r++)for(let c=1;c<14;c++){tileMap[r][c]=0;elevMap[r][c]=0;heightMap[r][c]=0.3;}
+  // Clear extract area
+  for(let r=ROWS-9;r<ROWS-1;r++)for(let c=COLS-9;c<COLS-1;c++){tileMap[r][c]=0;elevMap[r][c]=0;heightMap[r][c]=0.3;}
+
+  // Generate scatter props (rocks, pillars, runes, bones)
+  genScatter();
+}
+
+let scatterProps=[];
+const PROP_TYPES=[
+  {type:'rock',   icons:['⬟','⬡'],colors:['#3a3a4a','#2e2e3e','#44445a'],r:8},
+  {type:'pillar', icons:['▮','▯'],colors:['#4a3a2a','#3a2e1e','#5a4a30'],r:6},
+  {type:'rune',   icons:['✦','✧','❋'],colors:['#6366f188','#a855f788','#4ade8044'],r:5,glow:true},
+  {type:'bones',  icons:['✕','×'],colors:['#4a4040','#3a3030'],r:4},
+  {type:'torch',  icons:['𝄬'],colors:['#f97316'],r:4,glow:true,light:true},
+];
+function genScatter(){
+  scatterProps=[];
+  const count=180;
+  for(let i=0;i<count;i++){
+    const wx=60+Math.random()*(MAP_W-120);
+    const wy=60+Math.random()*(MAP_H-120);
+    if(isSolid(wx,wy))continue;
+    if(dist(wx,wy,160,160)<120)continue; // not in spawn
+    const pt=PROP_TYPES[Math.floor(Math.random()*PROP_TYPES.length)];
+    const icon=pt.icons[Math.floor(Math.random()*pt.icons.length)];
+    const color=pt.colors[Math.floor(Math.random()*pt.colors.length)];
+    const elv=getElev(wx,wy);
+    scatterProps.push({wx,wy,type:pt.type,icon,color,r:pt.r,glow:!!pt.glow,light:!!pt.light,elv,
+      phase:Math.random()*Math.PI*2, scale:0.7+Math.random()*0.6});
+  }
 }
 
 function isSolid(wx,wy){
@@ -315,6 +398,18 @@ function getElev(wx,wy){
   const c=Math.floor(wx/TILE),r=Math.floor(wy/TILE);
   if(r<0||r>=ROWS||c<0||c>=COLS)return 0;
   return elevMap[r][c]||0;
+}
+// Get smooth continuous height 0..1 for rendering
+function getSmoothHeight(wx,wy){
+  const c=wx/TILE,r=wy/TILE;
+  const ic=Math.floor(c),ir=Math.floor(r);
+  const fc=c-ic,fr=r-ir;
+  function gh(rr,cc){
+    if(rr<0||rr>=ROWS||cc<0||cc>=COLS)return 0;
+    return heightMap[rr]?heightMap[rr][cc]||0:0;
+  }
+  const h00=gh(ir,ic),h10=gh(ir,ic+1),h01=gh(ir+1,ic),h11=gh(ir+1,ic+1);
+  return h00*(1-fc)*(1-fr)+h10*fc*(1-fr)+h01*(1-fc)*fr+h11*fc*fr;
 }
 function canAttack(attackerElev,targetElev){
   // High hits all, mid hits mid+low, low hits only low
@@ -335,7 +430,7 @@ const ENEMY_TYPES=[
 
 function spawnEnemies(){
   enemies=[];
-  for(let i=0;i<28;i++){
+  for(let i=0;i<40;i++){
     let wx,wy,tries=0;
     do{wx=200+Math.random()*(MAP_W-400);wy=200+Math.random()*(MAP_H-400);tries++;}
     while((isSolid(wx,wy)||dist(wx,wy,160,160)<220)&&tries<60);
@@ -353,11 +448,13 @@ function spawnEnemies(){
 // ═══════════════════════════════════════════════════════════
 function spawnChests(){
   chests=[];
-  for(let i=0;i<16;i++){
+  for(let i=0;i<24;i++){
     let wx,wy,tries=0;
     do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
     while(isSolid(wx,wy)&&tries<50);
-    const wand=WANDS[Math.floor(Math.random()*WANDS.length)];
+    // Chests can contain wands or armor
+    const pool=Math.random()<0.4?ARMORS:WANDS;
+    const wand=pool[Math.floor(Math.random()*pool.length)];
     chests.push({wx,wy,wand,opened:false,gp:Math.random()*Math.PI*2});
   }
 }
@@ -371,47 +468,85 @@ function initPlayer(){
   player={
     wx:160,wy:160,
     hp:100,maxHp:100,
-    spd:2.9,r:12,
-    inventory:[],        // {wand, gridX, gridY} placed in grid
-    equippedIdx:null,    // index in inventory
+    baseSpd:2.9,spd:2.9,r:12,
+    baseDef:0,def:0,
+    inventory:[],
+    equippedIdx:null,
+    armorSlot:null,   // equipped armor item ref
+    bootsSlot:null,   // equipped boots item ref
+    accSlot:null,     // equipped accessory item ref
     xp:0,xpNext:100,level:1,
     attackCd:0,
-    elev:0,
+    elev:0,prevElev:0,
+    // Elevation jump animation
+    elevAnimT:0,      // 0..1 animation progress
+    elevAnimDir:0,    // +1 up, -1 down
+    visualElevOffset:0, // current visual Y offset (animated)
   };
-  // Place loadout wands into inventory
-  loadout.forEach((w,i)=>{
-    if(w) placeWandInGrid(w);
-  });
+  loadout.forEach(w=>{ if(w) placeItemInGrid(w); });
+  recalcStats();
   updateInvGrid();
 }
 
-function placeWandInGrid(wand){
-  // Try to find free space in 6x4 grid; wand is 1×3 (1 wide, 3 tall) or 1×2
-  const [sw,sh]=wand.size;
+function recalcStats(){
+  // Reset to base
+  player.def=player.baseDef;
+  const baseSpd=player.baseSpd||2.9;
+  let spdBonus=0, hpBonus=0;
+  player.inventory.forEach(item=>{
+    const it=item.item;
+    if(item.equipped){
+      if(it.type==='armor') player.def+=it.def||0;
+      if(it.type==='boots') spdBonus+=it.spd||0;
+      if(it.type==='acc'){
+        hpBonus+=it.maxHp||0;
+      }
+    }
+  });
+  player.spd=Math.min(baseSpd+spdBonus,6);
+  const newMaxHp=100+hpBonus+(player.level-1)*20;
+  if(newMaxHp>player.maxHp) player.hp+=newMaxHp-player.maxHp;
+  player.maxHp=newMaxHp;
+  player.hp=Math.min(player.hp,player.maxHp);
+}
+
+function placeItemInGrid(itemData){
+  const it={...itemData};
+  const [sw,sh]=it.size;
   for(let gy=0;gy<=INV_ROWS-sh;gy++){
     for(let gx=0;gx<=INV_COLS-sw;gx++){
       if(canPlace(gx,gy,sw,sh)){
-        player.inventory.push({wand:{...wand},gx,gy});
-        if(player.equippedIdx===null)player.equippedIdx=player.inventory.length-1;
+        const entry={item:it,gx,gy,equipped:false};
+        player.inventory.push(entry);
+        // Auto-equip first wand
+        if(player.equippedIdx===null && !it.type) player.equippedIdx=player.inventory.length-1;
         return true;
       }
     }
   }
-  return false; // no space
+  return false;
 }
+// Keep old name as alias for wands
+function placeWandInGrid(wand){ return placeItemInGrid(wand); }
 
 function canPlace(gx,gy,sw,sh,excludeIdx=null){
-  for(const item of player.inventory){
-    if(player.inventory.indexOf(item)===excludeIdx)continue;
-    const [isw,ish]=item.wand.size;
-    if(gx<item.gx+isw&&gx+sw>item.gx&&gy<item.gy+ish&&gy+sh>item.gy)return false;
+  for(let i=0;i<player.inventory.length;i++){
+    if(i===excludeIdx)continue;
+    const entry=player.inventory[i];
+    const it=entry.item||entry.wand;
+    if(!it)continue;
+    const [isw,ish]=it.size;
+    if(gx<entry.gx+isw&&gx+sw>entry.gx&&gy<entry.gy+ish&&gy+sh>entry.gy)return false;
   }
   return true;
 }
 
 function getEquipped(){
   if(player.equippedIdx===null||player.equippedIdx>=player.inventory.length)return null;
-  return player.inventory[player.equippedIdx]?.wand||null;
+  const entry=player.inventory[player.equippedIdx];
+  if(!entry)return null;
+  // Return wand-like object (item may be wand or have .item)
+  return entry.item||entry.wand||null;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -421,29 +556,35 @@ const CELL=30,GAP=2;
 function updateInvGrid(){
   const grid=document.getElementById('inv-grid');
   grid.innerHTML='';
-  // Background cells
   for(let r=0;r<INV_ROWS;r++)for(let c=0;c<INV_COLS;c++){
-    const cell=document.createElement('div');
-    cell.className='inv-cell';
-    grid.appendChild(cell);
+    const cell=document.createElement('div');cell.className='inv-cell';grid.appendChild(cell);
   }
-  // Item blocks
-  player.inventory.forEach((item,idx)=>{
-    const [sw,sh]=item.wand.size;
+  player.inventory.forEach((entry,idx)=>{
+    const it=entry.item||entry.wand;
+    if(!it)return;
+    const [sw,sh]=it.size;
+    const isWand=!it.type;
+    const isEquippedWand=isWand&&player.equippedIdx===idx;
+    const isEquippedArmor=entry.equipped;
+    const isEq=isEquippedWand||isEquippedArmor;
+    const isSel=selectedInvIdx===idx;
     const block=document.createElement('div');
-    block.className='inv-item-block'+(selectedInvIdx===idx?' selected':'');
-    block.style.cssText=`
-      left:${item.gx*(CELL+GAP)}px;
-      top:${item.gy*(CELL+GAP)}px;
-      width:${sw*CELL+(sw-1)*GAP}px;
-      height:${sh*CELL+(sh-1)*GAP}px;
-      background:${item.wand.color}22;
-      border-color:${item.wand.color}88;
-      font-size:16px;
-      color:${item.wand.color};
-    `;
-    block.textContent=item.wand.icon;
-    block.title=item.wand.name+'\n'+item.wand.desc;
+    block.className='inv-item-block'+(isSel?' selected':'')+(isEq?' is-equipped':'');
+    block.style.cssText=
+      `left:${entry.gx*(CELL+GAP)}px;`+
+      `top:${entry.gy*(CELL+GAP)}px;`+
+      `width:${sw*CELL+(sw-1)*GAP}px;`+
+      `height:${sh*CELL+(sh-1)*GAP}px;`+
+      `background:${it.color}28;`+
+      `border-color:${isEq?'#4ade80':it.color+'99'};`+
+      `color:${it.color};`;
+    // Type badge color
+    const typeColor=it.type==='armor'?'#94a3b8':it.type==='boots'?'#4ade80':it.type==='acc'?'#fbbf24':'#c084fc';
+    block.innerHTML=
+      `<span style="font-size:16px;line-height:1">${it.icon}</span>`+
+      `<span class="inv-item-name" style="color:${typeColor}">${it.name.split(' ')[0]}</span>`+
+      (isEq?`<span style="font-size:5px;color:#4ade80;line-height:1">▶EQ</span>`:'');
+    block.title=`${it.name}\n${it.desc||''}`;
     block.onclick=()=>{
       selectedInvIdx=(selectedInvIdx===idx)?null:idx;
       updateInvGrid();
@@ -452,34 +593,56 @@ function updateInvGrid(){
     };
     grid.appendChild(block);
   });
-  const slots=player.inventory.length;
-  document.getElementById('inv-weight').textContent=`${slots} / 6 slots`;
+  document.getElementById('inv-weight').textContent=`${player.inventory.length} / 8 slots`;
 
-  // Weapon HUD
   const w=getEquipped();
   document.getElementById('weapon-name').textContent=w?w.name:'BARE HANDS';
-  document.getElementById('weapon-stats').textContent=w?`DMG ${w.dmg[0]}–${w.dmg[1]} · RNG ${w.range}`:'DMG 5–8 · RNG 40';
-  // HP/XP
+  // Stats line: weapon + armor bonuses
+  const defStr=player.def>0?` · DEF ${player.def}`:'';
+  const spdStr=player.spd>3?` · SPD ${player.spd.toFixed(1)}`:'';
+  document.getElementById('weapon-stats').textContent=
+    w?`DMG ${w.dmg[0]}–${w.dmg[1]} · RNG ${w.range}${defStr}${spdStr}`:`无武器${defStr}${spdStr}`;
   document.getElementById('hp-fill').style.width=(player.hp/player.maxHp*100)+'%';
   document.getElementById('xp-fill').style.width=(player.xp/player.xpNext*100)+'%';
 }
 
 function equipSelected(){
   if(selectedInvIdx===null)return;
-  player.equippedIdx=selectedInvIdx;
-  addLog(`装备: ${player.inventory[selectedInvIdx].wand.name}`,'info');
+  const entry=player.inventory[selectedInvIdx];
+  const it=entry.item||entry.wand;
+  if(!it)return;
+  if(!it.type){
+    // It's a wand
+    player.equippedIdx=selectedInvIdx;
+    addLog(`装备法杖: ${it.name}`,'info');
+  } else {
+    // Armor/boots/acc — toggle equipped on this entry
+    // Unequip same type first
+    player.inventory.forEach((e,i)=>{
+      if(i!==selectedInvIdx&&e.item&&e.item.type===it.type) e.equipped=false;
+    });
+    entry.equipped=!entry.equipped;
+    addLog((entry.equipped?'装备':'卸下')+`: ${it.name}`,'info');
+    recalcStats();
+  }
   updateInvGrid();
 }
 
 function dropSelected(){
   if(selectedInvIdx===null)return;
-  const item=player.inventory.splice(selectedInvIdx,1)[0];
-  droppedWands.push({wx:player.wx+Math.cos(Math.random()*Math.PI*2)*20,wy:player.wy+Math.sin(Math.random()*Math.PI*2)*20,wand:item.wand});
+  const entry=player.inventory.splice(selectedInvIdx,1)[0];
+  const it=entry.item||entry.wand;
+  droppedWands.push({
+    wx:player.wx+Math.cos(Math.random()*Math.PI*2)*20,
+    wy:player.wy+Math.sin(Math.random()*Math.PI*2)*20,
+    wand:it  // keep field name for compat
+  });
   if(player.equippedIdx>=player.inventory.length)player.equippedIdx=player.inventory.length>0?0:null;
   selectedInvIdx=null;
   document.getElementById('btn-equip').disabled=true;
   document.getElementById('btn-drop').disabled=true;
-  addLog('丢弃了一件物品','info');
+  recalcStats();
+  addLog(`丢弃: ${it.name}`,'info');
   updateInvGrid();
 }
 
@@ -514,7 +677,7 @@ function updatePickup(dt){
 function finishPickup(){
   if(!pickupTarget)return;
   const wand=pickupTarget.wand;
-  const placed=placeWandInGrid(wand);
+  const placed=placeItemInGrid(wand);
   if(!placed){
     addLog('背包已满!','dmg');
     pickupTarget=null;pickupProgress=0;
@@ -529,6 +692,7 @@ function finishPickup(){
   spawnParticles(pickupTarget.wx,pickupTarget.wy,wand.color,12,3);
   pickupTarget=null;pickupProgress=0;
   document.getElementById('pickup-bar-wrap').style.display='none';
+  recalcStats();
   updateInvGrid();
 }
 
@@ -629,9 +793,10 @@ function updateEnemies(dt){
       e.attackCd-=dt;
       if(e.attackCd<=0){
         e.attackCd=1/e.attackRate;
-        const dmg=e.dmg+Math.random()*4-2;
+        const rawDmg=e.dmg+Math.random()*4-2;
+        const dmg=Math.max(1,rawDmg-player.def*0.4);
         player.hp=Math.max(0,player.hp-dmg);
-        addLog(`${e.name} 造成 ${Math.round(dmg)} 伤害`,'dmg');
+        addLog(`${e.name} 造成 ${Math.round(dmg)} 伤害`+(player.def>0?` (减免${Math.round(rawDmg-dmg)})`:''),'dmg');
         updateInvGrid();
         if(player.hp<=0)killPlayer();
       }
@@ -663,7 +828,12 @@ function updateProjectiles(dt){
           player.xp+=e2.xp;
           addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
           spawnParticles(e2.wx,e2.wy,e2.color,20,4);
-          if(e2.dropWand){const w=WANDS[Math.floor(Math.random()*WANDS.length)];droppedWands.push({wx:e2.wx,wy:e2.wy,wand:w});addLog(`掉落 ${w.name}!`,'loot');}
+          if(e2.dropWand){
+              const pool=Math.random()<0.3?ARMORS:WANDS;
+              const w=pool[Math.floor(Math.random()*pool.length)];
+              droppedWands.push({wx:e2.wx,wy:e2.wy,wand:w});
+              addLog(`掉落 ${w.name}!`,'loot');
+            }
           enemies.splice(enemies.indexOf(e2),1);
           checkLevelUp();
         });
@@ -705,7 +875,7 @@ function checkExtract(){
   if(dist(player.wx,player.wy,extractPoint.wx,extractPoint.wy)<50){
     gameState='extracted';
     // Move inventory to stash
-    const gained=player.inventory.map(i=>i.wand);
+    const gained=player.inventory.map(i=>i.item||i.wand);
     gained.forEach(w=>stash.push({...w}));
     const es=document.getElementById('extract-screen');
     es.style.display='flex';
@@ -734,60 +904,83 @@ function goHomebase(){
 function renderHomebase(){
   document.getElementById('hb-gold-val').textContent=gold;
 
-  // Stash
+  // ── STASH ──
   const sg=document.getElementById('storage-grid');
   sg.innerHTML='';
   const stashSlots=20;
   for(let i=0;i<stashSlots;i++){
     const slot=document.createElement('div');
-    slot.className='storage-slot'+(stash[i]?' occupied':'')+(selectedStorage===i?' selected-storage':'');
-    if(stash[i]){
+    const hasItem=!!stash[i];
+    const isSel=selectedStorage===i;
+    slot.className='storage-slot'+(hasItem?' occupied':'')+(isSel?' selected-storage':'');
+    if(hasItem){
       slot.innerHTML=`<div style="font-size:20px">${stash[i].icon}</div><div class="slot-name">${stash[i].name}</div>`;
+      if(isSel) slot.style.borderColor='#fbbf24';
     }
     slot.onclick=()=>{
-      selectedStorage=(selectedStorage===i&&stash[i])?null:i;
+      if(!hasItem){selectedStorage=null;}
+      else{selectedStorage=(isSel?null:i);}
       selectedLoadout=null;
+      // Update hint
+      document.getElementById('loadout-hint').textContent=selectedStorage!==null?'← 点下方槽位放入':'';
       renderHomebase();
     };
     sg.appendChild(slot);
   }
 
-  // Loadout
+  // ── LOADOUT ──
   const lg=document.getElementById('loadout-grid');
   lg.innerHTML='';
-  const loadoutSlots=3;
-  for(let i=0;i<loadoutSlots;i++){
+  for(let i=0;i<3;i++){
     const slot=document.createElement('div');
-    slot.className='loadout-slot'+(loadout[i]?' occupied':'')+(selectedLoadout===i?' selected-loadout':'');
-    if(loadout[i]){
+    const hasItem=!!loadout[i];
+    const isSel=selectedLoadout===i;
+    slot.className='loadout-slot'+(hasItem?' occupied':'')+(isSel?' selected-loadout':'');
+    if(hasItem){
+      slot.style.borderColor='#6366f1';
       slot.innerHTML=`<div style="font-size:20px">${loadout[i].icon}</div><div class="slot-name">${loadout[i].name}</div>`;
     }else{
-      slot.innerHTML=`<div style="font-size:18px;color:#2a2a35">+</div><div class="slot-name">空槽位</div>`;
+      // Empty slot — if stash item selected, show as target
+      if(selectedStorage!==null&&stash[selectedStorage]){
+        slot.style.borderColor='#fbbf2466';
+        slot.innerHTML=`<div style="font-size:14px;color:#fbbf2466">+</div><div class="slot-name" style="color:#fbbf2444">放入</div>`;
+      }else{
+        slot.innerHTML=`<div style="font-size:14px;color:#2a2a35">+</div><div class="slot-name">空槽</div>`;
+      }
     }
     slot.onclick=()=>{
-      selectedLoadout=(selectedLoadout===i)?null:i;
-      selectedStorage=null;
-      renderHomebase();
+      if(selectedStorage!==null&&stash[selectedStorage]&&!hasItem){
+        // Place stash item into this loadout slot
+        loadout[i]=stash.splice(selectedStorage,1)[0];
+        selectedStorage=null;
+        document.getElementById('loadout-hint').textContent='';
+        renderHomebase();
+      }else if(hasItem){
+        // Click occupied loadout slot → return to stash
+        stash.push(loadout[i]);
+        loadout[i]=null;
+        renderHomebase();
+      }
     };
     lg.appendChild(slot);
   }
 
-  document.getElementById('btn-to-loadout').disabled=selectedStorage===null||!stash[selectedStorage];
-  document.getElementById('btn-from-loadout').disabled=selectedLoadout===null||!loadout[selectedLoadout];
-
-  // Market
+  // ── MARKET ──
   const ml=document.getElementById('market-list');
   ml.innerHTML='';
-  WANDS.forEach(w=>{
+  ALL_ITEMS.forEach(w=>{
     const price=marketPrices[w.id]||w.basePrice;
     const trend=price>w.basePrice?'up':'down';
     const trendIcon=trend==='up'?'▲':'▼';
+    const inStash=stash.some(s=>s.id===w.id);
     const div=document.createElement('div');
     div.className='market-item';
+    const typeLabel=w.type==='armor'?'[防具]':w.type==='boots'?'[鞋]':w.type==='acc'?'[饰品]':'[法杖]';
+    const typeClr=w.type==='armor'?'#94a3b8':w.type==='boots'?'#4ade80':w.type==='acc'?'#fbbf24':'#c084fc';
     div.innerHTML=`
       <div class="mi-icon">${w.icon}</div>
       <div class="mi-info">
-        <div class="mi-name">${w.name}</div>
+        <div class="mi-name">${w.name} <span style="font-size:6px;color:${typeClr}">${typeLabel}</span></div>
         <div class="mi-price">
           <span class="price-val">◈${price}</span>
           <span class="price-trend ${trend}">${trendIcon}</span>
@@ -795,7 +988,7 @@ function renderHomebase(){
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <button class="mi-action mi-sell" ${stash.some(s=>s.id===w.id)?'':'disabled'}
+        <button class="mi-action mi-sell" ${inStash?'':'disabled'}
           onclick="sellWand('${w.id}',${price})">卖出</button>
         <button class="mi-action mi-buy" ${gold>=price?'':'disabled'}
           onclick="buyWand('${w.id}',${price})">◈${price}</button>
@@ -803,23 +996,6 @@ function renderHomebase(){
     `;
     ml.appendChild(div);
   });
-}
-
-function moveToLoadout(){
-  if(selectedStorage===null||!stash[selectedStorage])return;
-  const freeSlot=loadout.findIndex(s=>!s);
-  if(freeSlot===-1){addLog('出发装备已满(3件)');return;}
-  loadout[freeSlot]=stash.splice(selectedStorage,1)[0];
-  selectedStorage=null;
-  renderHomebase();
-}
-
-function moveFromLoadout(){
-  if(selectedLoadout===null||!loadout[selectedLoadout])return;
-  stash.push(loadout[selectedLoadout]);
-  loadout[selectedLoadout]=null;
-  selectedLoadout=null;
-  renderHomebase();
 }
 
 function sellWand(id,price){
@@ -834,7 +1010,7 @@ function sellWand(id,price){
 function buyWand(id,price){
   if(gold<price){addLog('金币不足','dmg');return;}
   if(stash.length>=20){addLog('仓库已满','dmg');return;}
-  const w=WANDS.find(w=>w.id===id);
+  const w=ALL_ITEMS.find(w=>w.id===id);
   stash.push({...w});
   gold-=price;
   addLog(`购买 ${w.name}`,'loot');
@@ -871,50 +1047,201 @@ function startRaid(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// DRAW
+// DRAW — 2.5D ELEVATION SYSTEM
 // ═══════════════════════════════════════════════════════════
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
 const mmCanvas=document.getElementById('mm-canvas');
 const mmCtx=mmCanvas.getContext('2d');
 
-const FLOOR_COLORS=[['#12121a','#11111a','#131320'],['#181620','#161420','#1a1828'],['#1c2030','#1a1e2e','#202434']];
-const WALL_COLORS=['#1e1e2e','#1a1a28','#222235'];
-const ELEV_TINTS=['','rgba(255,220,100,0.06)','rgba(100,200,255,0.09)'];
+// Visual Y offset per elevation level (higher = drawn higher up on screen)
+const ELEV_Y_OFFSET=[0,-16,-32];
+const FLOOR_TOP=[
+  ['#16161f','#141419','#17171e'],  // lv0 dark stone
+  ['#1e2232','#1c2030','#20253a'],  // lv1 raised blue-grey
+  ['#26203e','#231e3c','#2a2446'],  // lv2 high platform purple
+];
+const LEDGE_FACE=[
+  null,
+  ['#0c0c18','#0a0a14','#0e0e1c'],
+  ['#120d26','#100b22','#150f2c'],
+];
+const WALL_TOP =['#1c1c2a','#191926','#202030'];
+const WALL_FACE=['#0c0c16','#0a0a12','#0f0f1e'];
+
+function worldToScreen(wx,wy,elv){
+  const e=elv!==undefined?elv:getElev(wx,wy);
+  return{x:wx-cam.x, y:wy-cam.y+ELEV_Y_OFFSET[e]};
+}
+function entityScreenY(wy,elv){ return wy-cam.y+ELEV_Y_OFFSET[elv||0]; }
 
 function drawMap(){
-  const sc=Math.max(0,Math.floor(cam.x/TILE)),ec=Math.min(COLS,Math.ceil((cam.x+W)/TILE)+1);
-  const sr=Math.max(0,Math.floor(cam.y/TILE)),er=Math.min(ROWS,Math.ceil((cam.y+H)/TILE)+1);
+  const sc=Math.max(0,Math.floor(cam.x/TILE));
+  const ec=Math.min(COLS,Math.ceil((cam.x+W)/TILE)+2);
+  const sr=Math.max(0,Math.floor(cam.y/TILE));
+  const er=Math.min(ROWS,Math.ceil((cam.y+H)/TILE)+4);
+
+  // ── Pass 1: Draw floor tiles with smooth height-based coloring ──
   for(let r=sr;r<er;r++){
     for(let c=sc;c<ec;c++){
-      const sx=c*TILE-cam.x,sy=r*TILE-cam.y;
-      const t=tileMap[r][c],elv=elevMap[r][c]||0;
+      if(!tileMap[r])continue;
+      const t=tileMap[r][c];
+      const elv=elevMap[r]?elevMap[r][c]||0:0;
+      const h=heightMap[r]?heightMap[r][c]||0:0;
+      const sx=c*TILE-cam.x;
+      const sy=r*TILE-cam.y+ELEV_Y_OFFSET[elv];
+
       if(t===1){
-        ctx.fillStyle=WALL_COLORS[(r*3+c*7)%3];ctx.fillRect(sx,sy,TILE,TILE);
-        ctx.fillStyle='rgba(255,255,255,0.025)';ctx.fillRect(sx,sy,TILE,3);
-        ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=.5;ctx.strokeRect(sx,sy,TILE,TILE);
-      }else{
-        ctx.fillStyle=FLOOR_COLORS[elv][(r+c)%3];ctx.fillRect(sx,sy,TILE,TILE);
-        if(ELEV_TINTS[elv]){ctx.fillStyle=ELEV_TINTS[elv];ctx.fillRect(sx,sy,TILE,TILE);}
-        // Edge highlight for elevation change
-        if(elv>0){
-          ctx.strokeStyle='rgba(150,200,255,0.1)';ctx.lineWidth=1;ctx.strokeRect(sx+.5,sy+.5,TILE-1,TILE-1);
-        }
-        if((r+c)%5===0){ctx.fillStyle='rgba(255,255,255,0.015)';ctx.fillRect(sx+17,sy+17,5,5);}
+        // Wall — solid dark block with top highlight
+        ctx.fillStyle=WALL_TOP[(r*3+c*7)%3];
+        ctx.fillRect(sx,sy,TILE,TILE);
+        ctx.fillStyle='rgba(255,255,255,0.03)';
+        ctx.fillRect(sx,sy,TILE,2);
+      } else {
+        // Floor: color interpolated from height
+        // lv0: #14141c  lv1: #1e2232  lv2: #26203e
+        const t01=Math.min(1,Math.max(0,(h-0.3)/0.22)); // 0→1 as h goes 0.3→0.52
+        const t12=Math.min(1,Math.max(0,(h-0.52)/0.2)); // 0→1 as h goes 0.52→0.72
+        let r_=0x14,g_=0x14,b_=0x1c;
+        // lerp lv0 → lv1
+        r_=Math.round(r_+(0x1e-0x14)*t01);
+        g_=Math.round(g_+(0x22-0x14)*t01);
+        b_=Math.round(b_+(0x32-0x1c)*t01);
+        // lerp lv1 → lv2
+        r_=Math.round(r_+(0x26-0x1e)*t12);
+        g_=Math.round(g_+(0x20-0x22)*t12);
+        b_=Math.round(b_+(0x3e-0x32)*t12);
+        ctx.fillStyle=`rgb(${r_},${g_},${b_})`;
+        ctx.fillRect(sx,sy,TILE,TILE);
+        // Subtle checker detail
+        if((r+c)%9===0){ctx.fillStyle='rgba(255,255,255,0.01)';ctx.fillRect(sx+14,sy+14,5,5);}
       }
     }
+  }
+
+  // ── Pass 2: Smooth ledge faces using height gradients ──
+  for(let r=sr;r<er;r++){
+    for(let c=sc;c<ec;c++){
+      if(!tileMap[r])continue;
+      const t=tileMap[r][c];
+      const elv=elevMap[r]?elevMap[r][c]||0:0;
+      const h=heightMap[r]?heightMap[r][c]||0:0;
+      if(elv===0&&t!==1)continue;
+
+      const sx=c*TILE-cam.x;
+      const sy=r*TILE-cam.y+ELEV_Y_OFFSET[elv];
+      const ci=(r*3+c*7)%3;
+
+      // South face
+      const rB=r+1;
+      const elvB=rB<ROWS&&elevMap[rB]?elevMap[rB][c]||0:0;
+      const tB=rB<ROWS&&tileMap[rB]?tileMap[rB][c]:0;
+      const hB=rB<ROWS&&heightMap[rB]?heightMap[rB][c]||0:0;
+
+      if(t===1?tB===0:elv>elvB){
+        // Face height proportional to height difference for smooth look
+        const faceH=t===1?18:Math.round(16*elv+(h-hB)*8);
+        const fy=sy+TILE;
+        const topColor=t===1?WALL_FACE[ci%3]:LEDGE_FACE[elv][ci%3];
+        const grad=ctx.createLinearGradient(sx,fy,sx,fy+faceH);
+        grad.addColorStop(0,topColor);
+        grad.addColorStop(1,'rgba(0,0,0,0.95)');
+        ctx.fillStyle=grad;
+        ctx.fillRect(sx,fy,TILE,faceH);
+        ctx.fillStyle='rgba(0,0,0,0.45)';
+        ctx.fillRect(sx,fy+faceH-1,TILE,2);
+      }
+
+      // West face
+      const cL=c-1;
+      const elvL=cL>=0&&elevMap[r]?elevMap[r][cL]||0:0;
+      const tL=cL>=0&&tileMap[r]?tileMap[r][cL]:0;
+      const hL=cL>=0&&heightMap[r]?heightMap[r][cL]||0:0;
+      if(t===1?tL===0:elv>elvL){
+        const faceH=t===1?18:Math.round(16*elv+(h-hL)*8);
+        const grad=ctx.createLinearGradient(sx-5,sy,sx,sy);
+        grad.addColorStop(0,'rgba(0,0,0,0.75)');
+        grad.addColorStop(1,t===1?WALL_FACE[ci%3]:LEDGE_FACE[elv][ci%3]);
+        ctx.fillStyle=grad;
+        ctx.fillRect(sx-5,sy+3,5,TILE+faceH-3);
+      }
+    }
+  }
+
+  // ── Pass 3: Smooth contour lines at elevation transitions ──
+  // Draw a soft gradient strip where height changes between tiles
+  ctx.save();
+  ctx.globalAlpha=0.18;
+  for(let r=sr;r<er-1;r++){
+    for(let c=sc;c<ec-1;c++){
+      if(!tileMap[r]||!tileMap[r+1])continue;
+      const e0=elevMap[r]?elevMap[r][c]||0:0;
+      const e1=elevMap[r+1]?elevMap[r+1][c]||0:0;
+      const t0=tileMap[r][c],t1=tileMap[r+1][c];
+      if(t0||t1)continue;
+      if(e0!==e1){
+        const hi=Math.max(e0,e1);
+        const sx=c*TILE-cam.x;
+        const sy=(r+1)*TILE-cam.y+ELEV_Y_OFFSET[e0];
+        const edgeColor=hi===2?'#7c6fff':'#4a6fff';
+        const grad=ctx.createLinearGradient(sx,sy-4,sx,sy+4);
+        grad.addColorStop(0,'transparent');
+        grad.addColorStop(0.5,edgeColor);
+        grad.addColorStop(1,'transparent');
+        ctx.fillStyle=grad;
+        ctx.fillRect(sx,sy-4,TILE,8);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawScatter(){
+  for(const p of scatterProps){
+    const sx=p.wx-cam.x;
+    const sy=entityScreenY(p.wy,p.elv);
+    if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+    ctx.save();
+    if(p.glow){
+      p.phase+=0.04;
+      const pulse=0.6+0.4*Math.sin(p.phase);
+      ctx.shadowColor=p.color.replace('88','');
+      ctx.shadowBlur=p.light?12*pulse:6*pulse;
+      ctx.globalAlpha=p.light?0.6+0.4*pulse:0.7;
+    } else {
+      ctx.globalAlpha=0.55+Math.random()*0.05;
+    }
+    ctx.font=`${Math.round(p.r*p.scale*2)}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillStyle=p.color;
+    ctx.fillText(p.icon,sx,sy+p.r);
+    // Torch: draw small flame above
+    if(p.light){
+      const fp=0.5+0.5*Math.sin(p.phase*2.3);
+      ctx.globalAlpha=0.4+0.4*fp;
+      ctx.shadowColor='#f97316';ctx.shadowBlur=16;
+      ctx.fillStyle='#fb923c';
+      ctx.font='10px sans-serif';
+      ctx.fillText('🔥',sx,sy-4);
+    }
+    ctx.restore();
   }
 }
 
 function drawExtractPoint(){
-  const sx=extractPoint.wx-cam.x,sy=extractPoint.wy-cam.y;
+  const elv=getElev(extractPoint.wx,extractPoint.wy);
+  const sx=extractPoint.wx-cam.x;
+  const sy=entityScreenY(extractPoint.wy,elv);
   if(sx<-70||sx>W+70||sy<-70||sy>H+70)return;
   const p=.5+.5*Math.sin(frames*.08);
   ctx.save();
-  ctx.globalAlpha=.12+p*.12;ctx.fillStyle='#4ade80';ctx.beginPath();ctx.arc(sx,sy,48+p*10,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;ctx.strokeStyle='#4ade80';ctx.lineWidth=2;ctx.shadowColor='#4ade80';ctx.shadowBlur=14;
+  ctx.globalAlpha=.12+p*.12;ctx.fillStyle='#4ade80';
+  ctx.beginPath();ctx.arc(sx,sy,48+p*10,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;ctx.strokeStyle='#4ade80';ctx.lineWidth=2;
+  ctx.shadowColor='#4ade80';ctx.shadowBlur=14;
   ctx.beginPath();ctx.arc(sx,sy,36,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle='#4ade80';ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText('▲',sx,sy+6);
+  ctx.fillStyle='#4ade80';ctx.font='18px sans-serif';ctx.textAlign='center';
+  ctx.fillText('▲',sx,sy+6);
   ctx.font='8px "Share Tech Mono"';ctx.fillText('EXTRACT',sx,sy+20);
   ctx.restore();
 }
@@ -922,7 +1249,9 @@ function drawExtractPoint(){
 function drawChests(){
   for(const ch of chests){
     if(ch.opened)continue;
-    const sx=ch.wx-cam.x,sy=ch.wy-cam.y;
+    const elv=getElev(ch.wx,ch.wy);
+    const sx=ch.wx-cam.x;
+    const sy=entityScreenY(ch.wy,elv);
     if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
     ch.gp+=.035;
     const g=.5+.5*Math.sin(ch.gp);
@@ -930,11 +1259,12 @@ function drawChests(){
     ctx.save();
     ctx.shadowColor=ch.wand.color;ctx.shadowBlur=8+g*12;
     ctx.fillStyle='#13131f';ctx.fillRect(sx-11,sy-11,22,22);
-    ctx.strokeStyle=isTarget?'#fbbf24':ch.wand.color;ctx.lineWidth=isTarget?2:1.5;ctx.strokeRect(sx-11,sy-11,22,22);
-    ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillStyle=ch.wand.color;ctx.fillText(ch.wand.icon,sx,sy+5);
+    ctx.strokeStyle=isTarget?'#fbbf24':ch.wand.color;
+    ctx.lineWidth=isTarget?2:1.5;ctx.strokeRect(sx-11,sy-11,22,22);
+    ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle=ch.wand.color;ctx.fillText(ch.wand.icon,sx,sy+5);
     ctx.restore();
-    const d=dist(player.wx,player.wy,ch.wx,ch.wy);
-    if(d<PICKUP_RANGE){
+    if(dist(player.wx,player.wy,ch.wx,ch.wy)<PICKUP_RANGE){
       ctx.fillStyle='#fbbf24';ctx.font='7px "Share Tech Mono"';ctx.textAlign='center';
       ctx.fillText(isTarget?'拾取中...':'[点击拾取]',sx,sy-16);
     }
@@ -943,11 +1273,14 @@ function drawChests(){
 
 function drawDroppedWands(){
   for(const dw of droppedWands){
-    const sx=dw.wx-cam.x,sy=dw.wy-cam.y;
+    const elv=getElev(dw.wx,dw.wy);
+    const sx=dw.wx-cam.x;
+    const sy=entityScreenY(dw.wy,elv);
     if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
     const isTarget=pickupTarget===dw;
     ctx.save();ctx.shadowColor=dw.wand.color;ctx.shadowBlur=14;
-    ctx.font='16px sans-serif';ctx.textAlign='center';ctx.fillStyle=dw.wand.color;ctx.fillText(dw.wand.icon,sx,sy+5);
+    ctx.font='16px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle=dw.wand.color;ctx.fillText(dw.wand.icon,sx,sy+5);
     if(isTarget){ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,sy,16,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
     if(dist(player.wx,player.wy,dw.wx,dw.wy)<PICKUP_RANGE){
@@ -957,66 +1290,108 @@ function drawDroppedWands(){
   }
 }
 
-function drawEnemies(){
+// Painter's algorithm: sort all entities by (wy + elev*1000) back-to-front
+function drawEntitiesSorted(){
+  const pElev=getElev(player.wx,player.wy);
+  const ents=[];
   for(const e of enemies){
-    const sx=e.wx-cam.x,sy=e.wy-cam.y;
-    if(sx<-40||sx>W+40||sy<-40||sy>H+40)continue;
-    const pElev=getElev(player.wx,player.wy);
-    const canHitPlayer=canAttack(e.elev,pElev);
-
-    ctx.save();
-    ctx.shadowColor=e.color;ctx.shadowBlur=canHitPlayer?12:4;
-    const bg=ctx.createRadialGradient(sx-3,sy-3,1,sx,sy,e.r);
-    bg.addColorStop(0,e.color+'cc');bg.addColorStop(1,e.color+'44');
-    ctx.fillStyle=bg;ctx.beginPath();ctx.arc(sx,sy,e.r,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle=e.color;ctx.lineWidth=canHitPlayer?1.8:0.8;ctx.globalAlpha=canHitPlayer?1:0.5;ctx.stroke();
-    ctx.restore();
-
-    // Elevation badge
-    if(e.elev>0){
-      ctx.fillStyle=ELEV_COLORS[e.elev];ctx.font='7px "Share Tech Mono"';ctx.textAlign='center';
-      ctx.fillText(['','MID','HIGH'][e.elev],sx,sy-e.r-4);
-    }
-
-    // HP bar
-    if(e.hp<e.maxHp){
-      const bw=e.r*2+6,bh=3,bx=sx-bw/2,by=sy-e.r-12;
-      ctx.fillStyle='#1a1a22';ctx.fillRect(bx,by,bw,bh);
-      ctx.fillStyle=e.color;ctx.fillRect(bx,by,bw*(e.hp/e.maxHp),bh);
-    }
+    const sx=e.wx-cam.x, sy=entityScreenY(e.wy,e.elev);
+    if(sx<-60||sx>W+60||sy<-80||sy>H+60)continue;
+    ents.push({type:'e',e,sortY:e.wy+e.elev*1000});
+  }
+  if(gameState!=='dead')
+    ents.push({type:'p',sortY:player.wy+pElev*1000});
+  ents.sort((a,b)=>a.sortY-b.sortY);
+  for(const ent of ents){
+    if(ent.type==='e')_drawEnemy(ent.e,pElev);
+    else _drawPlayer(pElev);
   }
 }
 
-function drawPlayer(){
-  if(gameState==='dead')return;
-  const sx=player.wx-cam.x,sy=player.wy-cam.y;
-  const w=getEquipped();
-  const color=w?w.color:'#e2e8f0';
-  const pElev=getElev(player.wx,player.wy);
+function _drawEnemy(e,pElev){
+  const sx=e.wx-cam.x;
+  const sy=entityScreenY(e.wy,e.elev);
+  const canHit=canAttack(e.elev,pElev);
+
+  // Ground shadow (at world floor level, no elev offset)
+  ctx.save();
+  ctx.globalAlpha=0.25;
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(sx,e.wy-cam.y+2,e.r*.85,e.r*.28,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
 
   ctx.save();
-  ctx.shadowColor=color;ctx.shadowBlur=18;
-  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,sy,player.r+5,0,Math.PI*2);ctx.stroke();
-  const g=ctx.createRadialGradient(sx-3,sy-3,1,sx,sy,player.r);
+  ctx.shadowColor=e.color;ctx.shadowBlur=canHit?14:3;
+  const bg=ctx.createRadialGradient(sx-3,sy-4,1,sx,sy,e.r);
+  bg.addColorStop(0,e.color+'dd');bg.addColorStop(1,e.color+'22');
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.arc(sx,sy,e.r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=e.color;
+  ctx.lineWidth=canHit?1.8:0.5;
+  ctx.globalAlpha=canHit?1:0.35;
+  ctx.stroke();
+  ctx.restore();
+
+  // Elevation dot above head
+  if(e.elev>0){
+    ctx.save();
+    ctx.fillStyle=e.elev===2?'#67e8f9':'#fbbf24';
+    ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(sx,sy-e.r-7,3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  // HP bar
+  if(e.hp<e.maxHp){
+    const bw=e.r*2+6,bh=3,bx=sx-bw/2,by=sy-e.r-14;
+    ctx.fillStyle='#080810';ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle=e.color;ctx.fillRect(bx,by,bw*(e.hp/e.maxHp),bh);
+  }
+}
+
+function _drawPlayer(pElev){
+  const sx=player.wx-cam.x;
+  const bounce=player.visualBounce||0;
+  const sy=entityScreenY(player.wy,pElev)+bounce;
+  const w=getEquipped();
+  const color=w?w.color:'#e2e8f0';
+
+  // Ground shadow
+  ctx.save();
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(sx,player.wy-cam.y+2,player.r*.85,player.r*.28,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor=color;ctx.shadowBlur=20;
+  ctx.strokeStyle=color;ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(sx,sy,player.r+5,0,Math.PI*2);ctx.stroke();
+  const g=ctx.createRadialGradient(sx-3,sy-4,1,sx,sy,player.r);
   g.addColorStop(0,'#f1f5f9');g.addColorStop(1,'#94a3b8');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,player.r,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
-  // Range ring
   const range=w?w.range:40;
-  ctx.save();ctx.globalAlpha=.05;ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.arc(sx,sy,range,0,Math.PI*2);ctx.stroke();ctx.restore();
+  ctx.save();ctx.globalAlpha=.05;ctx.strokeStyle=color;ctx.lineWidth=1;
+  ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(sx,sy,range,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
 
-  // Elevation badge on player
   document.getElementById('elev-badge').textContent=ELEV_NAMES[pElev];
   document.getElementById('elev-badge').style.color=ELEV_COLORS[pElev];
 }
 
 function drawProjectiles(){
   for(const p of projectiles){
-    const sx=p.wx-cam.x,sy=p.wy-cam.y;
+    const sx=p.wx-cam.x;
+    const sy=entityScreenY(p.wy,p.fromElev||0);
     ctx.save();ctx.shadowColor=p.color;ctx.shadowBlur=12;
-    ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -1024,28 +1399,30 @@ function drawParticles(){
   for(const p of particles){
     const sx=p.wx-cam.x,sy=p.wy-cam.y;
     ctx.save();ctx.globalAlpha=p.life/p.maxLife;ctx.fillStyle=p.color;
-    ctx.beginPath();ctx.arc(sx,sy,p.r*(p.life/p.maxLife),0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.beginPath();ctx.arc(sx,sy,p.r*(p.life/p.maxLife),0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
 }
 
 function drawMinimap(){
-  const mm=mmCtx,mw=90,mh=90,sx=MAP_W/mw,sy2=MAP_H/mh;
-  mm.fillStyle='#080810';mm.fillRect(0,0,mw,mh);
-  // Elevation tint
-  for(let r=0;r<ROWS;r+=3)for(let c=0;c<COLS;c+=3){
-    if(!tileMap[r]||tileMap[r][c]===1)continue;
-    const elv=elevMap[r][c]||0;
-    mm.fillStyle=elv===2?'#1a2030':elv===1?'#141a20':'#101018';
-    mm.fillRect(c*TILE/sx,r*TILE/sy2,3,3);
+  const mm=mmCtx,mw=90,mh=90;
+  const sxr=MAP_W/mw,syr=MAP_H/mh;
+  mm.fillStyle='#070710';mm.fillRect(0,0,mw,mh);
+  const ELEV_MM=['#101018','#161628','#1e1838'];
+  for(let r=0;r<ROWS;r+=2)for(let c=0;c<COLS;c+=2){
+    if(!tileMap[r])continue;
+    const t=tileMap[r][c];
+    const elv=elevMap[r]?elevMap[r][c]||0:0;
+    mm.fillStyle=t===1?'#242434':ELEV_MM[elv];
+    mm.fillRect(c*TILE/sxr,r*TILE/syr,2,2);
   }
-  mm.fillStyle='#2a2a40';
-  for(let r=0;r<ROWS;r+=2)for(let c=0;c<COLS;c+=2){if(tileMap[r]&&tileMap[r][c]===1)mm.fillRect(c*TILE/sx,r*TILE/sy2,2,2);}
-  mm.fillStyle='#e53e3e';enemies.forEach(e=>mm.fillRect(e.wx/sx-1,e.wy/sy2-1,2,2));
-  mm.fillStyle='#4ade80';mm.fillRect(extractPoint.wx/sx-3,extractPoint.wy/sy2-3,6,6);
-  mm.fillStyle='#fbbf24';chests.forEach(ch=>{if(!ch.opened)mm.fillRect(ch.wx/sx-1,ch.wy/sy2-1,2,2);});
-  mm.fillStyle='#fff';mm.beginPath();mm.arc(player.wx/sx,player.wy/sy2,3,0,Math.PI*2);mm.fill();
-  mm.strokeStyle='#ffffff22';mm.lineWidth=.5;mm.strokeRect(cam.x/sx,cam.y/sy2,(W)/sx,H/sy2);
+  mm.fillStyle='#e53e3e';enemies.forEach(e=>mm.fillRect(e.wx/sxr-1,e.wy/syr-1,2,2));
+  mm.fillStyle='#4ade80';mm.fillRect(extractPoint.wx/sxr-2,extractPoint.wy/syr-2,5,5);
+  mm.fillStyle='#fbbf24';chests.forEach(ch=>{if(!ch.opened)mm.fillRect(ch.wx/sxr-1,ch.wy/syr-1,2,2);});
+  mm.fillStyle='#fff';mm.beginPath();mm.arc(player.wx/sxr,player.wy/syr,3,0,Math.PI*2);mm.fill();
+  mm.strokeStyle='#ffffff18';mm.lineWidth=.5;mm.strokeRect(cam.x/sxr,cam.y/syr,W/sxr,H/syr);
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // LOG
@@ -1166,6 +1543,23 @@ function loop(ts){
       if(!isSolid(player.wx,ny2))player.wy=ny2;
     }
 
+    // Elevation jump animation
+    const curElev=getElev(player.wx,player.wy);
+    if(curElev!==player.prevElev){
+      player.elevAnimT=0;
+      player.elevAnimDir=curElev>player.prevElev?1:-1;
+      player.prevElev=curElev;
+    }
+    if(player.elevAnimT<1){
+      player.elevAnimT=Math.min(1,player.elevAnimT+dt*5);
+      // Bounce curve: goes up then settles
+      const t=player.elevAnimT;
+      const bounce=Math.sin(t*Math.PI)*0.5*(1-t);
+      player.visualBounce=bounce*14*player.elevAnimDir;
+    } else {
+      player.visualBounce=0;
+    }
+
     playerShoot(dt);
     updateEnemies(dt);
     updateProjectiles(dt);
@@ -1197,8 +1591,8 @@ function loop(ts){
 
   if(gameState==='playing'||gameState==='dead'){
     ctx.clearRect(0,0,W,H);
-    drawMap();drawExtractPoint();drawChests();drawDroppedWands();
-    drawParticles();drawEnemies();drawProjectiles();drawPlayer();
+    drawMap();drawScatter();drawExtractPoint();drawChests();drawDroppedWands();
+    drawParticles();drawEntitiesSorted();drawProjectiles();
 
     // Vignette
     const vig=ctx.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.72);
