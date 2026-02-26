@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ARCANE EXTRACTION v2</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -126,6 +127,52 @@ canvas{display:block}
 #tbtn-cycle{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.4);color:#a5b4fc}
 #tbtn-home{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);color:#4ade80}
 .tbtn-icon{font-size:18px;line-height:1}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{position:absolute;inset:0;background:#07070f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:100}
+#login-title{font-family:'Cinzel',serif;font-size:26px;color:#c8b89a;letter-spacing:8px;text-shadow:0 0 40px #6366f140}
+#login-sub{font-size:8px;color:#3a3a4a;letter-spacing:3px}
+#login-box{background:#0d0d18;border:1px solid #2a2a35;padding:22px 28px;width:300px;display:flex;flex-direction:column;gap:10px}
+#login-box input{background:#08080f;border:1px solid #2a2a35;color:#c8b89a;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;width:100%;box-sizing:border-box}
+#login-box input:focus{border-color:#6366f1}
+#login-box input::placeholder{color:#2a2a3a}
+.lbtn{padding:9px;background:none;border:1px solid #3a3a4a;color:#c8b89a;font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:2px;width:100%}
+.lbtn:hover{border-color:#6366f1;color:#a5b4fc}
+.lbtn.primary{border-color:#6366f155;color:#a5b4fc88}
+#login-msg{font-size:8px;text-align:center;min-height:12px;letter-spacing:1px;color:#3a3a4a}
+#login-msg.err{color:#f87171}
+#login-msg.ok{color:#4ade80}
+#login-switch{font-size:7px;color:#3a3a4a;text-align:center;cursor:pointer;letter-spacing:1px;margin-top:2px}
+#login-switch:hover{color:#6366f1}
+
+/* ── SAVE SLOTS SCREEN ── */
+#saves-screen{position:absolute;inset:0;background:#07070f;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99}
+#saves-title{font-family:'Cinzel',serif;font-size:18px;color:#c8b89a;letter-spacing:6px}
+#saves-subtitle{font-size:7px;color:#3a3a4a;letter-spacing:2px}
+#saves-list{display:flex;gap:12px}
+.sv{width:170px;min-height:155px;border:1px solid #1e1e2a;background:#0d0d18;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;position:relative;transition:border-color .15s}
+.sv:hover{border-color:#6366f1}
+.sv .sv-n{font-size:7px;color:#2a2a3a;letter-spacing:2px}
+.sv .sv-title{font-size:10px;color:#c8b89a;font-family:'Cinzel',serif;margin-top:2px}
+.sv .sv-stat{font-size:7px;color:#4a4a5a;line-height:1.9}
+.sv .sv-stat span{color:#8a8a9a}
+.sv .sv-time{font-size:6px;color:#2a2a3a;margin-top:auto;padding-top:6px;border-top:1px solid #1a1a22}
+.sv.empty{align-items:center;justify-content:center;border-style:dashed}
+.sv.empty:hover{border-color:#6366f155}
+.sv .sv-empty-icon{font-size:26px;color:#1e1e2a;margin-bottom:6px}
+.sv .sv-empty-txt{font-size:7px;color:#2a2a3a;letter-spacing:2px}
+.sv .sv-del{position:absolute;top:6px;right:8px;font-size:7px;color:#2a2a2a;cursor:pointer;padding:2px 4px;border:1px solid transparent}
+.sv .sv-del:hover{color:#f87171;border-color:#f8717144}
+#saves-loading{font-size:8px;color:#3a3a4a;letter-spacing:3px;animation:fadeIn .5s}
+
+/* ── USER BAR (top right in homebase) ── */
+#user-bar{display:none;align-items:center;gap:8px;font-size:7px;color:#3a3a4a}
+#user-email{color:#6366f166;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#btn-logout{background:none;border:1px solid #2a2a2a;color:#3a3a4a;font-family:'Share Tech Mono',monospace;font-size:7px;padding:3px 7px;cursor:pointer;letter-spacing:1px}
+#btn-logout:hover{border-color:#f87171;color:#f87171}
+#btn-save-now{background:none;border:1px solid #2a2a35;color:#4ade8066;font-family:'Share Tech Mono',monospace;font-size:7px;padding:3px 7px;cursor:pointer;letter-spacing:1px}
+#btn-save-now:hover{border-color:#4ade80;color:#4ade80}
+#save-status{font-size:7px;color:#2a2a3a;min-width:60px;text-align:right}
 </style>
 </head>
 <body>
@@ -189,6 +236,12 @@ canvas{display:block}
     <div id="hb-header">
       <div id="hb-title">HOME BASE</div>
       <div id="hb-gold">◈ <span id="hb-gold-val">0</span></div>
+      <div id="user-bar">
+        <div id="user-email"></div>
+        <button id="btn-save-now" onclick="saveGame()">💾 SAVE</button>
+        <div id="save-status"></div>
+        <button id="btn-logout" onclick="doLogout()">LOGOUT</button>
+      </div>
       <button id="hb-btn-raid" onclick="startRaid()">▶ RAID</button>
     </div>
     <div id="hb-body">
@@ -210,6 +263,27 @@ canvas{display:block}
     </div>
   </div>
 
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div id="login-title">ARCANE EXTRACTION</div>
+    <div id="login-sub">FORSAKEN SANCTUM · EARLY ACCESS</div>
+    <div id="login-box">
+      <input type="email" id="login-email" placeholder="EMAIL ADDRESS" autocomplete="email"/>
+      <input type="password" id="login-pass" placeholder="PASSWORD" autocomplete="current-password"/>
+      <button class="lbtn primary" onclick="doLogin()">▶ LOGIN</button>
+      <button class="lbtn" onclick="doSignup()">+ CREATE ACCOUNT</button>
+      <div id="login-msg"></div>
+      <div id="login-switch" onclick="toggleLoginMode()">没有账号？点此注册</div>
+    </div>
+  </div>
+
+  <!-- SAVE SLOTS SCREEN -->
+  <div id="saves-screen">
+    <div id="saves-title">SELECT SAVE</div>
+    <div id="saves-subtitle">选择存档位置</div>
+    <div id="saves-list"><div id="saves-loading">LOADING...</div></div>
+  </div>
   <!-- TOUCH -->
   <div id="touch-zone">
     <div id="joystick-base"><div id="joystick-knob"></div></div>
@@ -222,6 +296,199 @@ canvas{display:block}
 </div>
 
 <script>
+
+// ═══════════════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════════════════════
+const SUPA_URL='https://vvhoznnsywkfxbijzwvk.supabase.co';
+const SUPA_KEY='sb_publishable_7opFB4gcVM8Vw0V7ASmGKA_dpBgLaJx';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+let currentUser=null;
+let currentSlot=null;
+let saveTimer=null;
+let loginMode='login'; // 'login' | 'signup'
+
+// ── AUTH ──
+function toggleLoginMode(){
+  loginMode=loginMode==='login'?'signup':'login';
+  document.getElementById('login-switch').textContent=
+    loginMode==='login'?'没有账号？点此注册':'已有账号？点此登录';
+  setLoginMsg('');
+}
+
+function setLoginMsg(msg,type=''){
+  const el=document.getElementById('login-msg');
+  el.textContent=msg;
+  el.className=type;
+}
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){setLoginMsg('请填写邮箱和密码','err');return;}
+  setLoginMsg('登录中...','');
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){setLoginMsg(error.message==='Invalid login credentials'?'邮箱或密码错误':error.message,'err');return;}
+  currentUser=data.user;
+  onLoggedIn();
+}
+
+async function doSignup(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){setLoginMsg('请填写邮箱和密码','err');return;}
+  if(pass.length<6){setLoginMsg('密码至少6位','err');return;}
+  setLoginMsg('注册中...','');
+  const {data,error}=await sb.auth.signUp({email,password:pass});
+  if(error){setLoginMsg(error.message,'err');return;}
+  if(data.user&&!data.session){
+    setLoginMsg('注册成功！请检查邮箱验证链接','ok');return;
+  }
+  currentUser=data.user;
+  onLoggedIn();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;currentSlot=null;
+  gold=200;stash=[];loadout=[];
+  document.getElementById('homebase').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('user-bar').style.display='none';
+  setLoginMsg('已退出登录','ok');
+}
+
+function onLoggedIn(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('user-email').textContent=currentUser.email;
+  document.getElementById('user-bar').style.display='flex';
+  showSaves();
+}
+
+// ── SAVE SLOTS ──
+async function showSaves(){
+  const screen=document.getElementById('saves-screen');
+  screen.style.display='flex';
+  document.getElementById('saves-list').innerHTML='<div id="saves-loading">LOADING...</div>';
+
+  const {data,error}=await sb.from('saves').select('*').eq('user_id',currentUser.id).order('slot');
+  const slotMap={};
+  if(data) data.forEach(s=>slotMap[s.slot]=s);
+
+  const list=document.getElementById('saves-list');
+  list.innerHTML='';
+  for(let i=1;i<=3;i++){
+    const s=slotMap[i];
+    const div=document.createElement('div');
+    if(s){
+      const d=new Date(s.updated_at);
+      const timeStr=d.toLocaleDateString('zh-CN')+' '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+      div.className='sv';
+      div.innerHTML=`
+        <div class="sv-n">SLOT ${i}</div>
+        <div class="sv-title">ARCANE HUNTER</div>
+        <div class="sv-stat">
+          ◈ 金币 <span>${s.gold||0}</span><br>
+          📦 仓库 <span>${(s.stash||[]).length} 件</span><br>
+          ⚔️ 出击 <span>${s.raids||0} 次</span>
+        </div>
+        <div class="sv-time">${timeStr}</div>
+        <div class="sv-del" onclick="deleteSave(event,${i})">✕</div>
+      `;
+      div.onclick=()=>loadSave(s);
+    } else {
+      div.className='sv empty';
+      div.innerHTML=`<div class="sv-empty-icon">+</div><div class="sv-empty-txt">NEW GAME</div>`;
+      div.onclick=()=>newGame(i);
+    }
+    list.appendChild(div);
+  }
+}
+
+async function deleteSave(e,slot){
+  e.stopPropagation();
+  if(!confirm(`确认删除存档 ${slot}？`))return;
+  await sb.from('saves').delete().eq('user_id',currentUser.id).eq('slot',slot);
+  showSaves();
+}
+
+function newGame(slot){
+  currentSlot=slot;
+  gold=200;stash=[];loadout=[];
+  document.getElementById('saves-screen').style.display='none';
+  refreshMarket();
+  renderHomebase();
+  document.getElementById('homebase').style.display='flex';
+  setSaveStatus('新档位');
+  autoSave();
+}
+
+function loadSave(s){
+  currentSlot=s.slot;
+  gold=s.gold||200;
+  stash=(s.stash||[]).map(item=>({...item}));
+  loadout=(s.loadout||[]).map(item=>item?{...item}:null);
+  document.getElementById('saves-screen').style.display='none';
+  refreshMarket();
+  renderHomebase();
+  document.getElementById('homebase').style.display='flex';
+  setSaveStatus('已载入');
+}
+
+// ── SAVE GAME ──
+async function saveGame(){
+  if(!currentUser||!currentSlot)return;
+  setSaveStatus('保存中...');
+  const payload={
+    user_id:currentUser.id,
+    slot:currentSlot,
+    gold,
+    stash:stash.map(i=>({...i})),
+    loadout:loadout.map(i=>i?{...i}:null),
+    raids:(await getRaids())+0,
+    updated_at:new Date().toISOString(),
+  };
+  const {error}=await sb.from('saves').upsert(payload,{onConflict:'user_id,slot'});
+  if(error){setSaveStatus('保存失败','err');}
+  else{setSaveStatus('已保存 ✓');}
+}
+
+async function getRaids(){
+  const {data}=await sb.from('saves').select('raids').eq('user_id',currentUser.id).eq('slot',currentSlot).single();
+  return data?.raids||0;
+}
+
+function setSaveStatus(msg){
+  const el=document.getElementById('save-status');
+  el.textContent=msg;
+  clearTimeout(saveTimer);
+  if(msg!=='保存中...')saveTimer=setTimeout(()=>{el.textContent='';},3000);
+}
+
+// Auto-save every 60s when on homebase
+function autoSave(){
+  setInterval(()=>{
+    if(gameState==='homebase'&&currentUser&&currentSlot) saveGame();
+  },60000);
+}
+
+// Save on extract
+const _origGoHomebase=typeof goHomebase!=='undefined'?goHomebase:null;
+
+// ── INIT: check existing session ──
+async function initAuth(){
+  const {data}=await sb.auth.getSession();
+  if(data.session){
+    currentUser=data.session.user;
+    document.getElementById('user-email').textContent=currentUser.email;
+    document.getElementById('user-bar').style.display='flex';
+    document.getElementById('login-screen').style.display='none';
+    showSaves();
+  }
+  // else login screen stays visible (default)
+}
+
 // ═══════════════════════════════════════════════════════════
 // CONSTANTS & CONFIG
 // ═══════════════════════════════════════════════════════════
@@ -896,6 +1163,8 @@ function goHomebase(){
   document.getElementById('joystick-base').style.display='none';
   refreshMarket();
   renderHomebase();
+  // Auto-save on return to base
+  if(currentUser&&currentSlot) saveGame();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1043,6 +1312,14 @@ function startRaid(){
   updateInvGrid();
   addLog('进入 FORSAKEN SANCTUM','imp');
   addLog('搜刮·撤离·勿死','info');
+  // increment raids counter async
+  if(currentUser&&currentSlot){
+    sb.from('saves').select('raids').eq('user_id',currentUser.id).eq('slot',currentSlot).single()
+      .then(({data})=>{
+        const r=(data?.raids||0)+1;
+        sb.from('saves').update({raids:r}).eq('user_id',currentUser.id).eq('slot',currentSlot);
+      });
+  }
   selectedStorage=null;selectedLoadout=null;
 }
 
@@ -1614,8 +1891,10 @@ function loop(ts){
 // ═══════════════════════════════════════════════════════════
 refreshMarket();
 initJoystick();
-goHomebase(); // Start at homebase
+// Don't show homebase yet — wait for auth check
+// goHomebase() is called after login/load save
 requestAnimationFrame(ts=>{lastTime=ts;requestAnimationFrame(loop);});
+initAuth(); // Check session → show login or save select
 </script>
 </body>
 </html>
