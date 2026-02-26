@@ -99,12 +99,48 @@ canvas{display:block}
 .hb-action-btn{padding:4px 10px;background:none;border:1px solid #2a2a35;color:#c8b89a;font-family:'Share Tech Mono',monospace;font-size:8px;cursor:pointer}
 .hb-action-btn:hover{border-color:#fbbf24;color:#fbbf24}
 .hb-action-btn:disabled{opacity:.3;cursor:default}
-#loadout-section{margin-top:16px}
-#loadout-grid{display:grid;grid-template-columns:repeat(5,54px);gap:4px;margin-top:6px}
-.loadout-slot{width:54px;height:54px;border:1px dashed #1a1a28;background:#0a0a10;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;cursor:pointer;position:relative}
-.loadout-slot .slot-name{font-size:6px;color:#4a4a5a;position:absolute;bottom:3px;width:100%;text-align:center}
+
+/* ── HOMEBASE LOADOUT REDESIGN ── */
+#hb-body{display:flex;flex:1;overflow:hidden}
+#hb-storage{width:280px;padding:12px;border-right:1px solid #1a1a28;overflow-y:auto;flex-shrink:0}
+#hb-loadout{width:260px;padding:12px;border-right:1px solid #1a1a28;overflow-y:auto;flex-shrink:0}
+#hb-market{flex:1;padding:12px;overflow-y:auto}
+
+/* Equipment slots */
+#equip-slots-row{display:flex;gap:8px;flex-wrap:wrap}
+.equip-slot-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.equip-slot-label{font-size:6px;color:#3a3a4a;letter-spacing:1px}
+.equip-slot{width:52px;height:52px;border:1px solid #2a2a35;background:#0a0a10;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color .15s}
+.equip-slot:hover{border-color:#6366f1}
+.equip-slot.filled{border-color:#4ade8055;background:#0d1410}
+.equip-slot.selected{border-color:#fbbf24;box-shadow:0 0 8px #fbbf2433}
+.equip-slot .eslot-empty{font-size:18px;color:#1e1e2a}
+.equip-slot .eslot-icon{font-size:20px;line-height:1}
+.equip-slot .eslot-name{font-size:5px;color:#4ade8088;text-align:center;padding:0 2px;line-height:1.2;overflow:hidden;max-width:50px}
+.equip-slot .eslot-del{position:absolute;top:2px;right:3px;font-size:6px;color:#2a2a2a;cursor:pointer}
+.equip-slot .eslot-del:hover{color:#f87171}
+
+/* Ammo slots */
+#ammo-slots-row{display:flex;gap:6px;flex-wrap:wrap}
+.ammo-slot{width:52px;height:52px;border:1px dashed #2a2a35;background:#0a0a10;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color .15s;gap:2px}
+.ammo-slot:hover{border-color:#a855f755}
+.ammo-slot.filled{border-style:solid;background:#100a18}
+.ammo-slot.selected{border-color:#fbbf24;box-shadow:0 0 8px #fbbf2433}
+.ammo-slot .aslot-empty{font-size:14px;color:#1e1e2a}
+.ammo-slot .aslot-icon{font-size:18px;line-height:1}
+.ammo-slot .aslot-count{font-size:9px;font-weight:bold;line-height:1}
+.ammo-slot .aslot-name{font-size:5px;color:#8a8a9a;text-align:center;padding:0 1px;line-height:1.1}
+.ammo-slot .aslot-del{position:absolute;top:2px;right:3px;font-size:6px;color:#2a2a2a;cursor:pointer}
+.ammo-slot .aslot-del:hover{color:#f87171}
+
+/* Loadout bag grid */
+#loadout-grid{display:grid;grid-template-columns:repeat(4,52px);gap:4px;margin-top:6px}
+.loadout-slot{width:52px;height:52px;border:1px dashed #1a1a28;background:#0a0a10;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;cursor:pointer;position:relative}
+.loadout-slot:hover{border-color:#2a2a3a}
+.loadout-slot .slot-name{font-size:5px;color:#4a4a5a;position:absolute;bottom:3px;width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .loadout-slot.occupied{border-style:solid;border-color:#2a2a3a}
 .loadout-slot.selected-loadout{border-color:#6366f1!important}
+
 
 /* ── OVERLAY SCREENS ── */
 .overlay-screen{position:absolute;inset:0;background:#00000099;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
@@ -203,6 +239,7 @@ canvas{display:block}
     <div id="weapon-hud">
       <div id="weapon-name">BARE HANDS</div>
       <div id="weapon-stats">DMG 5–8 · RNG 40</div>
+      <div id="ammo-hud" style="font-size:8px;color:#a855f7;margin-top:3px"></div>
     </div>
     <div id="inv-panel">
       <div id="inv-header">
@@ -245,17 +282,56 @@ canvas{display:block}
       <button id="hb-btn-raid" onclick="startRaid()">▶ RAID</button>
     </div>
     <div id="hb-body">
-      <!-- Storage -->
+      <!-- LEFT: Stash -->
       <div id="hb-storage">
-        <div class="hb-section-title">STASH — 点选物品后点LOADOUT槽位放入</div>
+        <div class="hb-section-title">STASH <span id="loadout-hint" style="color:#fbbf24;font-size:7px;margin-left:8px"></span></div>
         <div id="storage-grid"></div>
-        <div id="loadout-section">
-          <div class="hb-section-title" style="margin-top:12px">LOADOUT · 带入下局 (最多3件) <span id="loadout-hint" style="color:#fbbf24;font-size:7px"></span></div>
-          <div id="loadout-grid"></div>
-          <div style="font-size:7px;color:#3a3a4a;margin-top:4px">点击LOADOUT中的物品可退回仓库</div>
-        </div>
       </div>
-      <!-- Market -->
+      <!-- CENTER: Loadout (equipment slots + bag) -->
+      <div id="hb-loadout">
+        <div class="hb-section-title">LOADOUT · 出击配置</div>
+        <!-- Equipment slots row -->
+        <div id="equip-slots-row">
+          <div class="equip-slot-wrap">
+            <div class="equip-slot-label">武器</div>
+            <div class="equip-slot" id="eslot-weapon" data-type="wand" onclick="clickEquipSlot('weapon')">
+              <span class="eslot-empty">⚔</span>
+            </div>
+          </div>
+          <div class="equip-slot-wrap">
+            <div class="equip-slot-label">防具</div>
+            <div class="equip-slot" id="eslot-armor" data-type="armor" onclick="clickEquipSlot('armor')">
+              <span class="eslot-empty">🛡</span>
+            </div>
+          </div>
+          <div class="equip-slot-wrap">
+            <div class="equip-slot-label">鞋子</div>
+            <div class="equip-slot" id="eslot-boots" data-type="boots" onclick="clickEquipSlot('boots')">
+              <span class="eslot-empty">👢</span>
+            </div>
+          </div>
+          <div class="equip-slot-wrap">
+            <div class="equip-slot-label">饰品</div>
+            <div class="equip-slot" id="eslot-acc" data-type="acc" onclick="clickEquipSlot('acc')">
+              <span class="eslot-empty">💍</span>
+            </div>
+          </div>
+        </div>
+        <!-- Ammo slots -->
+        <div class="hb-section-title" style="margin-top:10px">灵晶 · 弹药</div>
+        <div id="ammo-slots-row">
+          <div class="ammo-slot" id="aslot-0" onclick="clickAmmoSlot(0)"><span class="aslot-empty">+</span></div>
+          <div class="ammo-slot" id="aslot-1" onclick="clickAmmoSlot(1)"><span class="aslot-empty">+</span></div>
+          <div class="ammo-slot" id="aslot-2" onclick="clickAmmoSlot(2)"><span class="aslot-empty">+</span></div>
+          <div class="ammo-slot" id="aslot-3" onclick="clickAmmoSlot(3)"><span class="aslot-empty">+</span></div>
+        </div>
+        <div style="font-size:6px;color:#2a2a3a;margin-top:4px">点仓库物品 → 点槽位放入 · 点已占槽位退回</div>
+        <!-- Bag loadout -->
+        <div class="hb-section-title" style="margin-top:10px">背包带入 (最多4格)</div>
+        <div id="loadout-grid"></div>
+        <div style="font-size:6px;color:#2a2a3a;margin-top:4px">点击已放入物品可退回仓库</div>
+      </div>
+      <!-- RIGHT: Market -->
       <div id="hb-market">
         <div class="hb-section-title">ARCANE MARKET</div>
         <div id="market-list"></div>
@@ -353,6 +429,9 @@ async function doLogout(){
   await sb.auth.signOut();
   currentUser=null;currentSlot=null;
   gold=200;stash=[];loadout=[];
+  equipSlots={weapon:null,armor:null,boots:null,acc:null};
+  ammoSlots=[null,null,null,null];
+  bagLoadout=[];
   document.getElementById('homebase').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-bar').style.display='none';
@@ -416,6 +495,9 @@ async function deleteSave(e,slot){
 function newGame(slot){
   currentSlot=slot;
   gold=200;stash=[];loadout=[];
+  equipSlots={weapon:null,armor:null,boots:null,acc:null};
+  ammoSlots=[null,null,null,null];
+  bagLoadout=[];
   document.getElementById('saves-screen').style.display='none';
   refreshMarket();
   renderHomebase();
@@ -428,7 +510,17 @@ function loadSave(s){
   currentSlot=s.slot;
   gold=s.gold||200;
   stash=(s.stash||[]).map(item=>({...item}));
-  loadout=(s.loadout||[]).map(item=>item?{...item}:null);
+  try{
+    const ld=typeof s.loadout==='string'?JSON.parse(s.loadout):s.loadout||{};
+    equipSlots=ld.equipSlots||{weapon:null,armor:null,boots:null,acc:null};
+    ammoSlots=(ld.ammoSlots||[null,null,null,null]).map(a=>a||null);
+    bagLoadout=(ld.bagLoadout||[]).map(i=>i||null);
+  }catch(e){
+    equipSlots={weapon:null,armor:null,boots:null,acc:null};
+    ammoSlots=[null,null,null,null];
+    bagLoadout=[];
+  }
+  loadout=[];
   document.getElementById('saves-screen').style.display='none';
   refreshMarket();
   renderHomebase();
@@ -445,7 +537,11 @@ async function saveGame(){
     slot:currentSlot,
     gold,
     stash:stash.map(i=>({...i})),
-    loadout:loadout.map(i=>i?{...i}:null),
+    loadout:JSON.stringify({
+      equipSlots,
+      ammoSlots,
+      bagLoadout,
+    }),
     raids:(await getRaids())+0,
     updated_at:new Date().toISOString(),
   };
@@ -538,7 +634,47 @@ const ARMORS=[
   {id:'acc3',  name:'GOLD PENDANT',   icon:'🏅',type:'acc',  tier:3,maxHp:50,xpBonus:0.2,color:'#f59e0b',size:[1,1],basePrice:280,desc:'生命+50·经验+20%'},
   {id:'acc4',  name:'SOUL CRYSTAL',   icon:'💎',type:'acc',  tier:4,maxHp:80,xpBonus:0.4,color:'#22d3ee',size:[1,1],basePrice:500,desc:'生命+80·经验+40%'},
 ];
-const ALL_ITEMS=[...WANDS,...ARMORS];
+
+// ═══════════════════════════════════════════════════════════
+// SPIRIT CRYSTAL (灵晶) DATA — ammo
+// ═══════════════════════════════════════════════════════════
+// 4 elements × 4 tiers = 16 types
+// dmgMult: damage multiplier when loaded in matching wand
+const ELEMENTS=['fire','ice','thunder','void'];
+const ELEM_ICONS={'fire':'🔴','ice':'🔵','thunder':'🟡','void':'🟣'};
+const ELEM_COLORS={'fire':'#f97316','ice':'#67e8f9','thunder':'#fbbf24','void':'#a855f7'};
+// Wand → element mapping
+const WAND_ELEM={
+  ember:'fire', frost:'ice', thunder:'thunder', void:'void',
+  nature:'void', ancient:'fire', poison:'void', blood:'fire'
+};
+const CRYSTAL_TIERS=[
+  {tier:1,name:'粗糙灵晶',dmgMult:1.0,color:'#5a5a6a',basePrice:15},
+  {tier:2,name:'精制灵晶',dmgMult:1.4,color:'#6366f1',basePrice:35},
+  {tier:3,name:'纯化灵晶',dmgMult:2.0,color:'#a855f7',basePrice:70},
+  {tier:4,name:'至纯灵晶',dmgMult:3.5,color:'#fbbf24',basePrice:150},
+];
+const CRYSTALS=[];
+ELEMENTS.forEach(elem=>{
+  CRYSTAL_TIERS.forEach(t=>{
+    CRYSTALS.push({
+      id:`crystal_${elem}_${t.tier}`,
+      name:`${t.name}·${elem==='fire'?'炎':elem==='ice'?'冰':elem==='thunder'?'雷':'虚空'}`,
+      icon:ELEM_ICONS[elem],
+      type:'crystal',
+      elem, tier:t.tier,
+      dmgMult:t.dmgMult,
+      color:ELEM_COLORS[elem],
+      size:[1,1],
+      stackMax:99,
+      basePrice:t.basePrice,
+      desc:`伤害×${t.dmgMult}`,
+    });
+  });
+});
+function getCrystal(elem,tier){return CRYSTALS.find(c=>c.elem===elem&&c.tier===tier);}
+
+const ALL_ITEMS=[...WANDS,...ARMORS,...CRYSTALS];
 
 // Market prices fluctuate each visit
 let marketPrices={};
@@ -554,10 +690,17 @@ function refreshMarket(){
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════
 let gold=200;
-let stash=[];       // wands in homebase stash
-let loadout=[];     // wands player brings to raid (max 3)
-let selectedStorage=null; // index in stash selected
-let selectedLoadout=null; // index in loadout selected
+let stash=[];            // all items in homebase stash
+// New loadout structure
+let equipSlots={weapon:null,armor:null,boots:null,acc:null}; // equipped items
+let ammoSlots=[null,null,null,null];   // crystal stacks {crystal,qty}
+let bagLoadout=[];       // extra items carried in bag (max 4)
+let selectedStorage=null;
+let selectedEquipSlot=null;  // 'weapon'|'armor'|'boots'|'acc'
+let selectedAmmoSlot=null;   // 0-3
+let selectedLoadout=null;    // bag slot index
+// Legacy compat
+let loadout=[];
 
 // In-raid
 let gameState='homebase'; // homebase | playing | dead | extracted
@@ -719,10 +862,13 @@ function spawnChests(){
     let wx,wy,tries=0;
     do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
     while(isSolid(wx,wy)&&tries<50);
-    // Chests can contain wands or armor
-    const pool=Math.random()<0.4?ARMORS:WANDS;
+    // Chests: 40% armor, 30% crystals, 30% wands
+    const rr=Math.random();
+    const pool=rr<0.3?ARMORS:rr<0.6?CRYSTALS:WANDS;
     const wand=pool[Math.floor(Math.random()*pool.length)];
-    chests.push({wx,wy,wand,opened:false,gp:Math.random()*Math.PI*2});
+    const chestItem=Object.assign({},wand);
+    if(chestItem.type==='crystal') chestItem.qty=5+Math.floor(Math.random()*15);
+    chests.push({wx,wy,wand:chestItem,opened:false,gp:Math.random()*Math.PI*2});
   }
 }
 
@@ -750,26 +896,31 @@ function initPlayer(){
     elevAnimDir:0,    // +1 up, -1 down
     visualElevOffset:0, // current visual Y offset (animated)
   };
-  loadout.forEach(w=>{ if(w) placeItemInGrid(w); });
+  // Load equipped items
+  if(equipSlots.weapon) placeItemInGrid(equipSlots.weapon);
+  // Load bag items
+  bagLoadout.forEach(it=>{ if(it) placeItemInGrid(it); });
+  // Load ammo into player ammo pool
+  player.ammoPool=[];
+  ammoSlots.forEach(a=>{ if(a&&a.crystal) player.ammoPool.push({crystal:a.crystal,qty:a.qty}); });
+  // Set armor bonuses from equipped slots
+  player.equippedArmor=equipSlots.armor||null;
+  player.equippedBoots=equipSlots.boots||null;
+  player.equippedAcc=equipSlots.acc||null;
   recalcStats();
   updateInvGrid();
 }
 
 function recalcStats(){
-  // Reset to base
-  player.def=player.baseDef;
+  player.def=0;
   const baseSpd=player.baseSpd||2.9;
-  let spdBonus=0, hpBonus=0;
-  player.inventory.forEach(item=>{
-    const it=item.item;
-    if(item.equipped){
-      if(it.type==='armor') player.def+=it.def||0;
-      if(it.type==='boots') spdBonus+=it.spd||0;
-      if(it.type==='acc'){
-        hpBonus+=it.maxHp||0;
-      }
-    }
-  });
+  let spdBonus=0,hpBonus=0;
+  // From equipped armor slots
+  if(player.equippedArmor) player.def+=(player.equippedArmor.def||0);
+  if(player.equippedBoots) spdBonus+=(player.equippedBoots.spd||0);
+  if(player.equippedAcc){
+    hpBonus+=(player.equippedAcc.maxHp||0);
+  }
   player.spd=Math.min(baseSpd+spdBonus,6);
   const newMaxHp=100+hpBonus+(player.level-1)*20;
   if(newMaxHp>player.maxHp) player.hp+=newMaxHp-player.maxHp;
@@ -1096,7 +1247,8 @@ function updateProjectiles(dt){
           addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
           spawnParticles(e2.wx,e2.wy,e2.color,20,4);
           if(e2.dropWand){
-              const pool=Math.random()<0.3?ARMORS:WANDS;
+              const rr2=Math.random();
+              const pool=rr2<0.25?ARMORS:rr2<0.55?CRYSTALS:WANDS;
               const w=pool[Math.floor(Math.random()*pool.length)];
               droppedWands.push({wx:e2.wx,wy:e2.wy,wand:w});
               addLog(`掉落 ${w.name}!`,'loot');
@@ -1142,8 +1294,15 @@ function checkExtract(){
   if(dist(player.wx,player.wy,extractPoint.wx,extractPoint.wy)<50){
     gameState='extracted';
     // Move inventory to stash
+    // Return inventory items to stash
     const gained=player.inventory.map(i=>i.item||i.wand);
-    gained.forEach(w=>stash.push({...w}));
+    gained.forEach(w=>addToStash({...w}));
+    // Return unused ammo to stash
+    if(player.ammoPool){
+      player.ammoPool.filter(a=>a.qty>0).forEach(a=>{
+        addToStash(Object.assign({},a.crystal,{qty:a.qty}));
+      });
+    }
     const es=document.getElementById('extract-screen');
     es.style.display='flex';
     document.getElementById('extract-summary').innerHTML=
@@ -1179,55 +1338,93 @@ function renderHomebase(){
   const stashSlots=20;
   for(let i=0;i<stashSlots;i++){
     const slot=document.createElement('div');
-    const hasItem=!!stash[i];
+    const it=stash[i];
     const isSel=selectedStorage===i;
-    slot.className='storage-slot'+(hasItem?' occupied':'')+(isSel?' selected-storage':'');
-    if(hasItem){
-      slot.innerHTML=`<div style="font-size:20px">${stash[i].icon}</div><div class="slot-name">${stash[i].name}</div>`;
-      if(isSel) slot.style.borderColor='#fbbf24';
+    slot.className='storage-slot'+(it?' occupied':'')+(isSel?' selected-storage':'');
+    if(it){
+      const isStack=it.type==='crystal';
+      slot.innerHTML=`<div style="font-size:${isStack?16:18}px">${it.icon}</div>`+
+        (isStack?`<div style="font-size:8px;font-weight:bold;color:${it.color}">${it.qty||1}</div>`:'') +
+        `<div class="slot-name">${it.name.split('·')[0]}</div>`;
+      if(isSel)slot.style.borderColor='#fbbf24';
     }
     slot.onclick=()=>{
-      if(!hasItem){selectedStorage=null;}
+      if(!it){selectedStorage=null;selectedEquipSlot=null;selectedAmmoSlot=null;selectedLoadout=null;}
       else{selectedStorage=(isSel?null:i);}
-      selectedLoadout=null;
-      // Update hint
-      document.getElementById('loadout-hint').textContent=selectedStorage!==null?'← 点下方槽位放入':'';
+      updateLoadoutHint();
       renderHomebase();
     };
     sg.appendChild(slot);
   }
 
-  // ── LOADOUT ──
+  // ── EQUIPMENT SLOTS ──
+  ['weapon','armor','boots','acc'].forEach(type=>{
+    const slotEl=document.getElementById(`eslot-${type}`);
+    const it=equipSlots[type];
+    const isSel=selectedEquipSlot===type;
+    if(it){
+      slotEl.className='equip-slot filled'+(isSel?' selected':'');
+      slotEl.style.borderColor=it.color+'88';
+      slotEl.innerHTML=
+        `<span class="eslot-icon">${it.icon}</span>`+
+        `<span class="eslot-name">${it.name.split(' ')[0]}</span>`+
+        `<span class="eslot-del" onclick="unequipSlot('${type}',event)">✕</span>`;
+    } else {
+      slotEl.className='equip-slot'+(isSel?' selected':'');
+      const empIcon={'weapon':'⚔','armor':'🛡','boots':'👢','acc':'💍'}[type];
+      slotEl.innerHTML=`<span class="eslot-empty">${empIcon}</span>`;
+    }
+  });
+
+  // ── AMMO SLOTS ──
+  for(let i=0;i<4;i++){
+    const slotEl=document.getElementById(`aslot-${i}`);
+    const a=ammoSlots[i];
+    const isSel=selectedAmmoSlot===i;
+    if(a&&a.crystal){
+      slotEl.className='ammo-slot filled'+(isSel?' selected':'');
+      slotEl.style.borderColor=a.crystal.color+'88';
+      slotEl.innerHTML=
+        `<span class="aslot-icon">${a.crystal.icon}</span>`+
+        `<span class="aslot-count" style="color:${a.crystal.color}">${a.qty}</span>`+
+        `<span class="aslot-name">${a.crystal.name.split('·')[0]} T${a.crystal.tier}</span>`+
+        `<span class="aslot-del" onclick="clearAmmoSlot(${i},event)">✕</span>`;
+    } else {
+      slotEl.className='ammo-slot'+(isSel?' selected':'');
+      slotEl.innerHTML=`<span class="aslot-empty">+</span>`;
+    }
+  }
+
+  // ── BAG LOADOUT ──
   const lg=document.getElementById('loadout-grid');
   lg.innerHTML='';
-  for(let i=0;i<3;i++){
+  for(let i=0;i<4;i++){
     const slot=document.createElement('div');
-    const hasItem=!!loadout[i];
+    const it=bagLoadout[i];
     const isSel=selectedLoadout===i;
-    slot.className='loadout-slot'+(hasItem?' occupied':'')+(isSel?' selected-loadout':'');
-    if(hasItem){
-      slot.style.borderColor='#6366f1';
-      slot.innerHTML=`<div style="font-size:20px">${loadout[i].icon}</div><div class="slot-name">${loadout[i].name}</div>`;
-    }else{
-      // Empty slot — if stash item selected, show as target
-      if(selectedStorage!==null&&stash[selectedStorage]){
-        slot.style.borderColor='#fbbf2466';
-        slot.innerHTML=`<div style="font-size:14px;color:#fbbf2466">+</div><div class="slot-name" style="color:#fbbf2444">放入</div>`;
-      }else{
-        slot.innerHTML=`<div style="font-size:14px;color:#2a2a35">+</div><div class="slot-name">空槽</div>`;
-      }
+    slot.className='loadout-slot'+(it?' occupied':'')+(isSel?' selected-loadout':'');
+    if(it){
+      const isStack=it.type==='crystal';
+      slot.innerHTML=`<div style="font-size:16px">${it.icon}</div>`+
+        (isStack?`<div style="font-size:7px;color:${it.color}">${it.qty||1}发</div>`:'') +
+        `<div class="slot-name">${it.name.split(' ')[0]}</div>`;
+      slot.style.borderColor=it.color+'66';
+    } else if(selectedStorage!==null&&stash[selectedStorage]){
+      slot.style.borderColor='#fbbf2444';
+      slot.innerHTML=`<div style="font-size:11px;color:#fbbf2444">+</div>`;
     }
     slot.onclick=()=>{
-      if(selectedStorage!==null&&stash[selectedStorage]&&!hasItem){
-        // Place stash item into this loadout slot
-        loadout[i]=stash.splice(selectedStorage,1)[0];
+      if(selectedStorage!==null&&stash[selectedStorage]&&!it){
+        // Place stash item into bag slot
+        bagLoadout[i]=Object.assign({},stash[selectedStorage]);
+        stash.splice(selectedStorage,1);
         selectedStorage=null;
-        document.getElementById('loadout-hint').textContent='';
+        updateLoadoutHint();
         renderHomebase();
-      }else if(hasItem){
-        // Click occupied loadout slot → return to stash
-        stash.push(loadout[i]);
-        loadout[i]=null;
+      } else if(it){
+        // Return to stash
+        addToStash(it);
+        bagLoadout[i]=null;
         renderHomebase();
       }
     };
@@ -1242,10 +1439,10 @@ function renderHomebase(){
     const trend=price>w.basePrice?'up':'down';
     const trendIcon=trend==='up'?'▲':'▼';
     const inStash=stash.some(s=>s.id===w.id);
+    const typeLabel=w.type==='armor'?'[防]':w.type==='boots'?'[鞋]':w.type==='acc'?'[饰]':w.type==='crystal'?'[晶]':'[杖]';
+    const typeClr=w.type==='crystal'?w.color:w.type==='armor'?'#94a3b8':w.type==='boots'?'#4ade80':w.type==='acc'?'#fbbf24':'#c084fc';
     const div=document.createElement('div');
     div.className='market-item';
-    const typeLabel=w.type==='armor'?'[防具]':w.type==='boots'?'[鞋]':w.type==='acc'?'[饰品]':'[法杖]';
-    const typeClr=w.type==='armor'?'#94a3b8':w.type==='boots'?'#4ade80':w.type==='acc'?'#fbbf24':'#c084fc';
     div.innerHTML=`
       <div class="mi-icon">${w.icon}</div>
       <div class="mi-info">
@@ -1253,36 +1450,112 @@ function renderHomebase(){
         <div class="mi-price">
           <span class="price-val">◈${price}</span>
           <span class="price-trend ${trend}">${trendIcon}</span>
-          · ${w.desc}
+          · ${w.desc||''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <button class="mi-action mi-sell" ${inStash?'':'disabled'}
-          onclick="sellWand('${w.id}',${price})">卖出</button>
+          onclick="sellItem('${w.id}',${price})">卖出</button>
         <button class="mi-action mi-buy" ${gold>=price?'':'disabled'}
-          onclick="buyWand('${w.id}',${price})">◈${price}</button>
+          onclick="buyItem('${w.id}',${price})">◈${price}</button>
       </div>
     `;
     ml.appendChild(div);
   });
 }
 
-function sellWand(id,price){
-  const idx=stash.findIndex(s=>s.id===id);
-  if(idx<0)return;
-  stash.splice(idx,1);
-  gold+=price;
-  addLog(`卖出 ◈${price}`,'imp');
+function updateLoadoutHint(){
+  document.getElementById('loadout-hint').textContent=
+    selectedStorage!==null?'← 选择放置位置':'';
+}
+
+function clickEquipSlot(type){
+  if(selectedStorage!==null&&stash[selectedStorage]){
+    const it=stash[selectedStorage];
+    const isWand=!it.type;
+    const itType=isWand?'weapon':it.type;
+    if(itType===type||(type==='weapon'&&isWand)){
+      // Unequip current if any
+      if(equipSlots[type]) addToStash(equipSlots[type]);
+      if(it.type==='crystal'){return;} // crystals go to ammo slots
+      equipSlots[type]=Object.assign({},it);
+      stash.splice(selectedStorage,1);
+      selectedStorage=null;
+      updateLoadoutHint();
+      renderHomebase();
+    }
+  } else {
+    selectedEquipSlot=(selectedEquipSlot===type)?null:type;
+    renderHomebase();
+  }
+}
+
+function unequipSlot(type,e){
+  e.stopPropagation();
+  if(equipSlots[type]){addToStash(equipSlots[type]);equipSlots[type]=null;}
   renderHomebase();
 }
 
-function buyWand(id,price){
+function clickAmmoSlot(i){
+  if(selectedStorage!==null&&stash[selectedStorage]){
+    const it=stash[selectedStorage];
+    if(it.type!=='crystal'){return;}
+    if(ammoSlots[i]&&ammoSlots[i].crystal.id===it.id){
+      // Stack
+      ammoSlots[i].qty=Math.min(99,(ammoSlots[i].qty||0)+(it.qty||1));
+      stash.splice(selectedStorage,1);
+    } else if(!ammoSlots[i]){
+      ammoSlots[i]={crystal:Object.assign({},it),qty:it.qty||1};
+      stash.splice(selectedStorage,1);
+    } else {
+      // Swap
+      addToStash(Object.assign({},ammoSlots[i].crystal,{qty:ammoSlots[i].qty}));
+      ammoSlots[i]={crystal:Object.assign({},it),qty:it.qty||1};
+      stash.splice(selectedStorage,1);
+    }
+    selectedStorage=null;
+    updateLoadoutHint();
+    renderHomebase();
+  }
+}
+
+function clearAmmoSlot(i,e){
+  e.stopPropagation();
+  if(ammoSlots[i]){
+    addToStash(Object.assign({},ammoSlots[i].crystal,{qty:ammoSlots[i].qty}));
+    ammoSlots[i]=null;
+  }
+  renderHomebase();
+}
+
+function addToStash(it){
+  // If crystal, try stacking
+  if(it.type==='crystal'){
+    const existing=stash.find(s=>s.id===it.id&&s.type==='crystal'&&(s.qty||1)<99);
+    if(existing){existing.qty=Math.min(99,(existing.qty||1)+(it.qty||1));return;}
+  }
+  if(stash.length<20) stash.push(Object.assign({},it));
+}
+
+function sellItem(id,price){
+  const idx=stash.findIndex(s=>s.id===id);
+  if(idx<0){addLog('仓库中无此物品','dmg');return;}
+  stash.splice(idx,1);
+  gold+=price;
+  addLog(`卖出 +◈${price}`,'loot');
+  renderHomebase();
+}
+
+function buyItem(id,price){
   if(gold<price){addLog('金币不足','dmg');return;}
   if(stash.length>=20){addLog('仓库已满','dmg');return;}
-  const w=ALL_ITEMS.find(w=>w.id===id);
-  stash.push({...w});
+  const it=ALL_ITEMS.find(w=>w.id===id);
+  if(!it)return;
+  const item=Object.assign({},it);
+  if(item.type==='crystal') item.qty=10;
+  addToStash(item);
   gold-=price;
-  addLog(`购买 ${w.name}`,'loot');
+  addLog(`购买 ${it.name}`,'info');
   renderHomebase();
 }
 
@@ -1310,6 +1583,7 @@ function startRaid(){
   }
 
   updateInvGrid();
+  updateAmmoHud();
   addLog('进入 FORSAKEN SANCTUM','imp');
   addLog('搜刮·撤离·勿死','info');
   // increment raids counter async
