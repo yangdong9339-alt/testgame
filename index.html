@@ -142,6 +142,13 @@ canvas{display:block}
 .loadout-slot.selected-loadout{border-color:#d97706!important}
 
 
+
+/* ── IN-RAID EQUIPMENT ROW ── */
+#inv-equip-row{display:flex;gap:3px;margin-bottom:5px}
+.inv-eq-slot{width:46px;height:46px;border:1px solid #d0cfc8;background:#f0efe9;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;position:relative;flex-shrink:0}
+.inv-eq-slot .ieq-icon{font-size:18px;line-height:1}
+.inv-eq-slot .ieq-label{font-size:5px;color:#9a9488;letter-spacing:1px;position:absolute;bottom:2px}
+.inv-eq-slot.filled{border-color:#15803d66;background:#f0fdf4}
 /* ── OVERLAY SCREENS ── */
 .overlay-screen{position:absolute;inset:0;background:rgba(247,246,240,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .overlay-screen h1{font-family:'Cinzel',serif;letter-spacing:6px;color:#1a1a18}
@@ -590,6 +597,14 @@ async function initAuth(){
 // CONSTANTS & CONFIG
 // ═══════════════════════════════════════════════════════════
 const W=900,H=600,MAP_W=2000,MAP_H=1600,TILE=40;
+
+// ── GAME BALANCE CONFIG ── (edit these to tune the game)
+const CONFIG={
+  ENEMY_INITIAL: 14,   // enemies spawned at raid start
+  ENEMY_MAX: 8,        // max enemies alive at once (respawn cap)
+  ENEMY_RESPAWN: 2,    // enemies per respawn wave
+  CHEST_COUNT: 20,     // number of chests on map
+};
 const COLS=Math.ceil(MAP_W/TILE),ROWS=Math.ceil(MAP_H/TILE);
 const PICKUP_TIME=1.8; // seconds to loot
 const PICKUP_RANGE=46;
@@ -877,7 +892,7 @@ function rollEnemyDrops(){
 
 function spawnEnemies(){
   enemies=[];
-  for(let i=0;i<18;i++){
+  for(let i=0;i<CONFIG.ENEMY_INITIAL;i++){
     let wx,wy,tries=0;
     do{wx=200+Math.random()*(MAP_W-400);wy=200+Math.random()*(MAP_H-400);tries++;}
     while((isSolid(wx,wy)||dist(wx,wy,160,160)<220)&&tries<60);
@@ -897,7 +912,7 @@ function spawnEnemies(){
 // ═══════════════════════════════════════════════════════════
 function spawnChests(){
   chests=[];
-  for(let i=0;i<24;i++){
+  for(let i=0;i<CONFIG.CHEST_COUNT;i++){
     let wx,wy,tries=0;
     do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
     while(isSolid(wx,wy)&&tries<50);
@@ -935,17 +950,20 @@ function initPlayer(){
     elevAnimDir:0,    // +1 up, -1 down
     visualElevOffset:0, // current visual Y offset (animated)
   };
-  // Load equipped items
-  if(equipSlots.weapon) placeItemInGrid(equipSlots.weapon);
+  // Load weapon into inventory and auto-equip
+  if(equipSlots.weapon){
+    placeItemInGrid(equipSlots.weapon);
+    player.equippedIdx=0; // weapon is always placed first
+  }
   // Load bag items
   bagLoadout.forEach(it=>{ if(it) placeItemInGrid(it); });
   // Load ammo into player ammo pool
   player.ammoPool=[];
-  ammoSlots.forEach(a=>{ if(a&&a.crystal) player.ammoPool.push({crystal:a.crystal,qty:a.qty}); });
-  // Set armor bonuses from equipped slots
-  player.equippedArmor=equipSlots.armor||null;
-  player.equippedBoots=equipSlots.boots||null;
-  player.equippedAcc=equipSlots.acc||null;
+  ammoSlots.forEach(a=>{ if(a&&a.crystal) player.ammoPool.push({crystal:Object.assign({},a.crystal),qty:a.qty}); });
+  // Set armor bonuses from equipped slots (applied directly, not in inventory)
+  player.equippedArmor=equipSlots.armor?Object.assign({},equipSlots.armor):null;
+  player.equippedBoots=equipSlots.boots?Object.assign({},equipSlots.boots):null;
+  player.equippedAcc=equipSlots.acc?Object.assign({},equipSlots.acc):null;
   recalcStats();
   updateInvGrid();
 }
@@ -1554,6 +1572,29 @@ function renderHomebase(){
   });
 }
 
+
+function updateInRaidEquipDisplay(){
+  const slots={
+    weapon:{id:'ieq-weapon',fallback:'⚔',label:'武器'},
+    armor:{id:'ieq-armor',fallback:'🛡',label:'防'},
+    boots:{id:'ieq-boots',fallback:'👢',label:'鞋'},
+    acc:{id:'ieq-acc',fallback:'💍',label:'饰'},
+  };
+  Object.entries(slots).forEach(([type,cfg])=>{
+    const el=document.getElementById(cfg.id);
+    if(!el)return;
+    const item=type==='weapon'?getEquipped():player['equipped'+type.charAt(0).toUpperCase()+type.slice(1)];
+    if(item){
+      el.className='inv-eq-slot filled';
+      el.innerHTML=`<span class="ieq-icon">${item.icon}</span><span class="ieq-label">${cfg.label}</span>`;
+      el.style.borderColor=(item.color||'#15803d')+'88';
+    } else {
+      el.className='inv-eq-slot';
+      el.innerHTML=`<span style="font-size:16px;color:#d0cfc8">${cfg.fallback}</span><span class="ieq-label" style="color:#d0cfc8">${cfg.label}</span>`;
+      el.style.borderColor='';
+    }
+  });
+}
 function updateLoadoutHint(){
   document.getElementById('loadout-hint').textContent=
     selectedStorage!==null?'← 选择放置位置':'';
@@ -1812,26 +1853,26 @@ function drawMap(){
   // ── Pass 3: Smooth contour lines at elevation transitions ──
   // Draw a soft gradient strip where height changes between tiles
   ctx.save();
-  ctx.globalAlpha=0.18;
+  // Pass 3: contour glow at elevation boundaries (no hard lines)
+  ctx.globalAlpha=0.12;
   for(let r=sr;r<er-1;r++){
     for(let c=sc;c<ec-1;c++){
       if(!tileMap[r]||!tileMap[r+1])continue;
       const e0=elevMap[r]?elevMap[r][c]||0:0;
       const e1=elevMap[r+1]?elevMap[r+1][c]||0:0;
-      const t0=tileMap[r][c],t1=tileMap[r+1][c];
-      if(t0||t1)continue;
-      if(e0!==e1){
-        const hi=Math.max(e0,e1);
-        const sx=c*TILE-cam.x;
-        const sy=(r+1)*TILE-cam.y+ELEV_Y_OFFSET[e0];
-        const edgeColor=hi===2?'#7c6fff':'#4a6fff';
-        const grad=ctx.createLinearGradient(sx,sy-4,sx,sy+4);
-        grad.addColorStop(0,'transparent');
-        grad.addColorStop(0.5,edgeColor);
-        grad.addColorStop(1,'transparent');
-        ctx.fillStyle=grad;
-        ctx.fillRect(sx,sy-4,TILE,8);
-      }
+      if(tileMap[r][c]||tileMap[r+1][c])continue;
+      if(e0===e1)continue;
+      // Only draw glow on the HIGH side
+      if(e0<e1)continue;
+      const hi=e0;
+      const sx=c*TILE-cam.x;
+      const sy=(r+1)*TILE-cam.y+ELEV_Y_OFFSET[e0];
+      const edgeColor=hi===2?'#9d8fff':'#6a8fff';
+      const grad=ctx.createLinearGradient(sx,sy-2,sx,sy+10);
+      grad.addColorStop(0,edgeColor);
+      grad.addColorStop(1,'transparent');
+      ctx.fillStyle=grad;
+      ctx.fillRect(sx,sy-2,TILE,12);
     }
   }
   ctx.restore();
@@ -2213,8 +2254,8 @@ function loop(ts){
     checkExtract();
 
     // Respawn
-    if(enemies.length<8){
-      for(let i=0;i<2;i++){
+    if(enemies.length<CONFIG.ENEMY_MAX){
+      for(let i=0;i<CONFIG.ENEMY_RESPAWN;i++){
         let wx,wy,tries=0;
         do{wx=100+Math.random()*(MAP_W-200);wy=100+Math.random()*(MAP_H-200);tries++;}
         while((isSolid(wx,wy)||dist(wx,wy,player.wx,player.wy)<280)&&tries<40);
