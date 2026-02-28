@@ -961,27 +961,7 @@ function genMap(){
   for(let r=0;r<ROWS;r++){ tileMap[r][0]=1; tileMap[r][COLS-1]=1; }
   for(let c=0;c<COLS;c++){ tileMap[0][c]=1; tileMap[ROWS-1][c]=1; }
 
-  // ── 高台区域（地图中央偏左）──
-  // 高台：约 10×8 格
-  const PR = 12, PC = 8;    // 高台左上角行列（距边界留空间）
-  const PH = 8, PW = 10;   // 高台高度(行)×宽度(列)
-  for(let r=PR;r<PR+PH;r++) for(let c=PC;c<PC+PW;c++){
-    elevMap[r][c]=1; heightMap[r][c]=1.0;
-  }
-  // 南侧斜坡（高台底边向下2格）：row = PR+PH, PR+PH+1
-  for(let c=PC+1;c<PC+PW-1;c++){
-    slopeMap[PR+PH][c]='ramp';
-    heightMap[PR+PH][c]=0.5;
-    slopeMap[PR+PH+1][c]=null;   // 地面
-  }
-  // 西侧斜坡（高台左侧）
-  for(let r=PR+1;r<PR+PH-1;r++){
-    slopeMap[r][PC-1]='ramp';
-    heightMap[r][PC-1]=0.5;
-  }
-  // 高台墙壁（东侧加几个掩体）
-  for(let r=PR+2;r<PR+5;r++) tileMap[r][PC+PW]=1;
-
+  // 纯平地图，高台由 buildPlatform3D() 直接生成 Three.js 物件
   genScatter();
 }
 
@@ -2627,6 +2607,127 @@ function buildMap3() {
     }
   }
 
+
+  // ══════════════════════════════════════════════════
+  // 独立真 3D 高台物件（中央平台 + 四面楔形斜坡）
+  // ══════════════════════════════════════════════════
+  (function buildPlatform3D(){
+    // 高台中心世界坐标
+    const PX = MAP_W * 0.35;   // x 中央偏左
+    const PZ = MAP_H * 0.38;   // z 中央偏上
+    const PW = U * 7;          // 平台宽（X方向）
+    const PD = U * 5;          // 平台深（Z方向）
+    const PH = PLAT_H;         // 平台高度
+    const RW = U * 2;          // 斜坡宽（延伸距离）
+
+    const matPlat  = new THREE.MeshLambertMaterial({ color: 0x1e3048 });
+    const matSide  = new THREE.MeshLambertMaterial({ color: 0x162438 });
+    const matRamp  = new THREE.MeshLambertMaterial({ color: 0x1a2e42, side: THREE.DoubleSide });
+    const matTop   = new THREE.MeshLambertMaterial({ color: 0x243850 });
+
+    function addP(m){ m.receiveShadow=true; m.castShadow=true; scene3.add(m); mapMeshes3.push(m); }
+
+    // ── 中央平台主体（Box）──
+    const platGeo = new THREE.BoxGeometry(PW, PH, PD);
+    const plat = new THREE.Mesh(platGeo, [matSide,matSide,matTop,matPlat,matSide,matSide]);
+    plat.position.set(PX, PH/2, PZ);
+    addP(plat);
+
+    // ── 四面斜坡（楔形，用 BufferGeometry 手动构建）──
+    // 每面斜坡：底边在地面(y=0)，顶边在平台顶面(y=PH)
+    // 斜坡面宽度 = 对应平台边长，延伸深度 = RW
+
+    function makeRampMesh(x, z, rx, rz, faceW, rampDepth, rotY) {
+      // 斜坡是一个 BufferGeometry 四边形斜面（两个三角）
+      // 局部坐标：底部 z=0(地面) 到 z=rampDepth(平台边)，y 从 0 到 PH
+      const hw = faceW / 2;
+      const verts = new Float32Array([
+        -hw, 0,   0,          // 0 底部左
+         hw, 0,   0,          // 1 底部右
+        -hw, PH,  rampDepth,  // 2 顶部左（与平台等高）
+         hw, PH,  rampDepth,  // 3 顶部右
+      ]);
+      const idx = new Uint16Array([0,1,2, 1,3,2]);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      geo.setIndex(new THREE.BufferAttribute(idx, 1));
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, matRamp);
+      mesh.rotation.y = rotY;
+      mesh.position.set(x, 0, z);
+      addP(mesh);
+
+      // 斜坡底部地板（填充斜坡投影区域）
+      const floorGeo = new THREE.BoxGeometry(faceW, 0.1, rampDepth);
+      const floor = new THREE.Mesh(floorGeo, matPlat);
+      // 旋转后局部偏移需手动算
+      const fx = x + Math.sin(rotY) * rampDepth/2 * (Math.cos(rotY)>0.5?-1:1);
+      // 用 group 来简化变换
+      const g = new THREE.Group();
+      g.rotation.y = rotY;
+      g.position.set(x, 0, z);
+      const fl2 = new THREE.Mesh(new THREE.BoxGeometry(faceW, 0.1, rampDepth), matPlat);
+      fl2.position.set(0, 0.05, rampDepth/2);
+      fl2.receiveShadow = true;
+      g.add(fl2);
+      scene3.add(g);
+      mapMeshes3.push(g);
+
+      // 斜坡两侧三角封面
+      const sideVerts = new Float32Array([
+        0, 0, 0,
+        0, PH, rampDepth,
+        0, 0, rampDepth,
+      ]);
+      const sideIdx = new Uint16Array([0,1,2]);
+      function makeSide(sign){
+        const sv = new Float32Array([
+          sign*hw, 0, 0,
+          sign*hw, PH, rampDepth,
+          sign*hw, 0, rampDepth,
+        ]);
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position', new THREE.BufferAttribute(sv,3));
+        sg.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]),1));
+        sg.computeVertexNormals();
+        const sm = new THREE.Mesh(sg, matSide);
+        sm.rotation.y = rotY;
+        sm.position.set(x, 0, z);
+        sm.castShadow = sm.receiveShadow = true;
+        scene3.add(sm); mapMeshes3.push(sm);
+      }
+      makeSide(1); makeSide(-1);
+    }
+
+    // 南面斜坡（+Z 方向离开平台）
+    makeRampMesh(PX, PZ + PD/2, 0, 0, PW, RW, 0);
+    // 北面斜坡（-Z 方向）
+    makeRampMesh(PX, PZ - PD/2, 0, 0, PW, RW, Math.PI);
+    // 东面斜坡（+X 方向）
+    makeRampMesh(PX + PW/2, PZ, 0, 0, PD, RW, -Math.PI/2);
+    // 西面斜坡（-X 方向）
+    makeRampMesh(PX - PW/2, PZ, 0, 0, PD, RW,  Math.PI/2);
+
+    // 把高台区域写入 elevMap，让游戏逻辑知道这里是高地
+    // 平台核心区（不含斜坡）
+    const c0=Math.floor((PX-PW/2)/TILE), c1=Math.ceil((PX+PW/2)/TILE);
+    const r0=Math.floor((PZ-PD/2)/TILE), r1=Math.ceil((PZ+PD/2)/TILE);
+    for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++){
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS){ elevMap[r][c]=1; heightMap[r][c]=1.0; }
+    }
+    // 斜坡区域（四周 RW/TILE 格）
+    const rampT = Math.ceil(RW/TILE);
+    for(let r=r0-rampT;r<r1+rampT;r++) for(let c=c0-rampT;c<c1+rampT;c++){
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS&&elevMap[r][c]===0){
+        // 计算到平台边缘的归一化距离
+        const wx=(c+0.5)*TILE, wz=(r+0.5)*TILE;
+        const dx=Math.max(0,Math.abs(wx-PX)-PW/2);
+        const dz=Math.max(0,Math.abs(wz-PZ)-PD/2);
+        const dd=Math.max(dx,dz);
+        if(dd<=RW){ heightMap[r][c]=Math.max(0,1-dd/RW); }
+      }
+    }
+  })();
   // 撤离点
   const ex3 = extractPoint.wx + U/2, ez3 = extractPoint.wy + U/2;
   const ering = new THREE.Mesh(new THREE.RingGeometry(U*0.4, U*0.65, 32), MAT3.extract);
