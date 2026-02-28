@@ -22,7 +22,7 @@ canvas{display:block}
 .bar-bg{height:5px;background:#1e1e2c;border:1px solid #2e2e42;position:relative;border-radius:2px}
 .bar-fill{height:100%;border-radius:2px;transition:width .15s}
 #hp-fill{background:linear-gradient(90deg,#dc2626,#f87171)}
-#xp-fill{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+
 #gold-display{font-size:11px;color:#d97706;white-space:nowrap;font-weight:bold}
 
 /* 战斗日志 左上 */
@@ -289,10 +289,7 @@ canvas{display:block}
         <div class="bar-label">VITALITY</div>
         <div class="bar-bg" style="width:120px"><div class="bar-fill" id="hp-fill" style="width:100%"></div></div>
       </div>
-      <div class="stat-block">
-        <div class="bar-label">XP</div>
-        <div class="bar-bg" style="width:80px"><div class="bar-fill" id="xp-fill" style="width:0%"></div></div>
-      </div>
+
       <div id="zone-label">FORSAKEN SANCTUM</div>
       <div id="gold-display">◈ 0</div>
     </div>
@@ -1076,9 +1073,24 @@ function spawnEnemies(){
     const spawnElev=t.elev||getElev(wx,wy);
     // Pre-roll enemy drops at spawn
     const drops=rollEnemyDrops(t);
-    enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
-      elev:spawnElev,attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
-      drops,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,
+    // 如果 drop_wand_ids 非空，敌人装备第一把武器
+    const equippedWand = (()=>{
+      const pool = t._dropWandIds && t._dropWandIds.length
+        ? t._dropWandIds.map(id=>WANDS.find(w=>w.id===id)).filter(Boolean)
+        : [];
+      return pool.length ? Object.assign({},pool[Math.floor(Math.random()*pool.length)]) : null;
+    })();
+    // 如果装备了武器，从武器继承攻击属性
+    const eDmg   = equippedWand ? (equippedWand.dmg[0]+equippedWand.dmg[1])/2 : t.dmg;
+    const eRange = equippedWand ? equippedWand.range : (t.range||60);
+    const eRate  = equippedWand ? equippedWand.spd   : (t.attackRate||1.0);
+    const eColor = equippedWand ? equippedWand.proj   : t.color;
+    enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:eDmg,color:t.color,projColor:eColor,r:t.r,name:t.name,
+      elev:spawnElev,attackCd:0,attackRate:eRate,aggroRange:t.aggroRange||200,wanderAngle:Math.random()*Math.PI*2,
+      drops,slowTimer:0,dotTimer:0,
+      ranged: equippedWand ? true : (t.ranged||false),
+      range:  eRange,
+      wand:   equippedWand,  // 存武器引用，供弹丸属性使用
       phase:Math.random()*Math.PI*2});
   }
 }
@@ -1177,7 +1189,7 @@ function initPlayer(){
     baseDef:0,def:0,
     inventory:[],
     equippedWeapon:null,  // 当前装备的武器（不在背包里）
-    xp:0,xpNext:100,level:1,
+
     attackCd:0,
     elev:0,prevElev:0,
     // Elevation jump animation
@@ -1213,7 +1225,7 @@ function recalcStats(){
     hpBonus+=(player.equippedAcc.maxHp||0);
   }
   player.spd=Math.min(baseSpd+spdBonus,6);
-  const newMaxHp=100+hpBonus+(player.level-1)*20;
+  const newMaxHp=(CONFIG.PLAYER_HP||100)+hpBonus;
   if(newMaxHp>player.maxHp) player.hp+=newMaxHp-player.maxHp;
   player.maxHp=newMaxHp;
   player.hp=Math.min(player.hp,player.maxHp);
@@ -1306,7 +1318,7 @@ function updateInvGrid(){
   document.getElementById('weapon-stats').textContent=
     w?`DMG ${w.dmg[0]}–${w.dmg[1]} · RNG ${w.range}${defStr}${spdStr}`:`无武器${defStr}${spdStr}`;
   document.getElementById('hp-fill').style.width=(player.hp/player.maxHp*100)+'%';
-  document.getElementById('xp-fill').style.width=(player.xp/player.xpNext*100)+'%';
+
 }
 
 function equipSelected(){
@@ -1623,12 +1635,15 @@ function playerShoot(dt){
   player.attackCd=1/rate;
   const [nx,ny]=normalize(closest.wx-player.wx,closest.wy-player.wy);
   const baseDmg=(w?w.dmg[0]:5)+Math.random()*((w?w.dmg[1]:8)-(w?w.dmg[0]:5));
+  const projSpd=12;
+  const projRange=w?w.range:40;
   projectiles.push({
     wx:player.wx,wy:player.wy,
-    vx:nx*12,vy:ny*12,        // 速度提高，弹道可见
+    vx:nx*projSpd,vy:ny*projSpd,
     dmg:baseDmg*dmgMult,
     color:w?w.proj:'#e2e8f0',
-    life:2.5,r:w&&w.aoe>0?8:5,
+    life:projRange/projSpd,   // 飞行时间 = 射程/速度
+    r:w&&w.aoe>0?8:5,
     aoe:w?w.aoe:0,pierce:w?!!w.pierce:false,
     slow:w?!!w.slow:false,vamp:w?!!w.vamp:false,
     dot:w?!!w.dot:false,
@@ -1661,17 +1676,48 @@ function updateEnemies(dt){
     if(e.slowTimer>0)e.slowTimer-=dt;
     if(e.dotTimer>0){e.dotTimer-=dt;e.hp-=dt*4;}
 
-    // Attack player (only if can attack elevation)
-    if(canAttack(e.elev,pElev)&&d<e.r+player.r+8){
+    // Attack player
+    if(canAttack(e.elev,pElev)){
       e.attackCd-=dt;
-      if(e.attackCd<=0){
-        e.attackCd=1/e.attackRate;
-        const rawDmg=e.dmg+Math.random()*4-2;
-        const dmg=Math.max(1,rawDmg-player.def*0.4);
-        player.hp=Math.max(0,player.hp-dmg);
-        addLog(`${e.name} 造成 ${Math.round(dmg)} 伤害`+(player.def>0?` (减免${Math.round(rawDmg-dmg)})`:''),'dmg');
-        updateInvGrid();
-        if(player.hp<=0)killPlayer();
+      if(e.ranged){
+        // 远程：在射程内发射弹丸，不需要贴近
+        if(d < e.range && e.attackCd<=0){
+          e.attackCd=1/e.attackRate;
+          const ang=Math.atan2(player.wy-e.wy,player.wx-e.wx);
+          const eProjSpd=12;
+          const ew=e.wand;
+          projectiles.push({
+            wx:e.wx+Math.cos(ang)*e.r,
+            wy:e.wy+Math.sin(ang)*e.r,
+            vx:Math.cos(ang)*eProjSpd,
+            vy:Math.sin(ang)*eProjSpd,
+            dmg:e.dmg,
+            color:e.projColor||e.color,
+            r:ew&&ew.aoe>0?8:6,
+            life:e.range/eProjSpd,   // 射程限制
+            fromElev:e.elev,
+            fromEnemy:true,
+            hit:new Set(),
+            aoe:ew?ew.aoe:0,
+            pierce:ew?!!ew.pierce:false,
+            slow:ew?!!ew.slow:false,
+            dot:ew?!!ew.dot:false,
+            vamp:false,
+          });
+        }else if(d>=e.range){e.attackCd=Math.max(0,e.attackCd-dt);}
+      } else {
+        // 近战
+        if(d<e.r+player.r+8){
+          if(e.attackCd<=0){
+            e.attackCd=1/e.attackRate;
+            const rawDmg=e.dmg+Math.random()*4-2;
+            const dmg=Math.max(1,rawDmg-player.def*0.4);
+            player.hp=Math.max(0,player.hp-dmg);
+            addLog(`${e.name} 造成 ${Math.round(dmg)} 伤害`+(player.def>0?` (减免${Math.round(rawDmg-dmg)})`:''),'dmg');
+            updateInvGrid();
+            if(player.hp<=0)killPlayer();
+          }
+        }else{e.attackCd=Math.max(0,e.attackCd-dt);}
       }
     }else{e.attackCd=Math.max(0,e.attackCd-dt);}
   }
@@ -1685,6 +1731,24 @@ function updateProjectiles(dt){
     if(p.life<=0||isSolid(p.wx,p.wy)){projectiles.splice(i,1);continue;}
 
     let killed=false;
+
+    // 敌人弹丸：只打玩家
+    if(p.fromEnemy){
+      if(dist(p.wx,p.wy,player.wx,player.wy)<player.r+p.r){
+        const rawDmg=p.dmg+Math.random()*4-2;
+        const dmg=Math.max(1,rawDmg-player.def*0.4);
+        player.hp=Math.max(0,player.hp-dmg);
+        addLog(`远程攻击命中 ${Math.round(dmg)} 伤害`+(player.def>0?` (减免${Math.round(rawDmg-dmg)})`:''),'dmg');
+        spawnParticles(player.wx,player.wy,p.color,4,1.5);
+        updateInvGrid();
+        if(player.hp<=0)killPlayer();
+        projectiles.splice(i,1);
+        continue;
+      }
+      continue; // 敌人弹丸不打敌人
+    }
+
+    // 玩家弹丸：打敌人
     for(const e of enemies){
       if(p.hit.has(e))continue;
       if(!canAttack(p.fromElev,e.elev))continue;
@@ -1712,8 +1776,7 @@ function updateProjectiles(dt){
   // 死亡处理放到循环外，避免在迭代中修改数组
   const dead=enemies.filter(e=>e.hp<=0);
   for(const e2 of dead){
-    player.xp+=e2.xp;
-    addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
+    addLog(`击杀 ${e2.name}`,'imp');
     spawnParticles(e2.wx,e2.wy,e2.color,20,4);
 
     // 死亡后在原地生成可拾取遗骸箱
@@ -1751,18 +1814,10 @@ function updateProjectiles(dt){
     }
 
     enemies.splice(enemies.indexOf(e2),1);
-    checkLevelUp();
   }
 }
 
-function checkLevelUp(){
-  while(player.xp>=player.xpNext){
-    player.xp-=player.xpNext;player.level++;player.xpNext=Math.floor(player.xpNext*1.4);
-    player.maxHp+=20;player.hp=Math.min(player.maxHp,player.hp+30);
-    addLog(`LEVEL UP LV${player.level}! 生命+20`,'imp');
-  }
-  updateInvGrid();
-}
+
 
 // ═══════════════════════════════════════════════════════════
 // DEATH / EXTRACT
@@ -1777,7 +1832,7 @@ function killPlayer(){
   spawnParticles(player.wx,player.wy,'#e53e3e',30,6);
   const ds=document.getElementById('death-screen');
   ds.style.display='flex';
-  document.getElementById('death-msg').textContent=`LV${player.level} 阵亡 — 背包物品已掉落 · 家园仓库安全`;
+  document.getElementById('death-msg').textContent=`阵亡 — 背包物品已掉落 · 家园仓库安全`;
 }
 
 const extractPoint={wx:MAP_W-150,wy:MAP_H-150};
@@ -2898,9 +2953,18 @@ function loop(ts){
         while((isSolid(wx,wy)||dist(wx,wy,player.wx,player.wy)<280)&&tries<40);
         const t=ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
         const drops2=rollEnemyDrops(ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)]);
-        enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
-          elev:getElev(wx,wy),attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
-          drops:drops2,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,phase:0});
+        const eq2 = (()=>{
+          const pool = t._dropWandIds && t._dropWandIds.length
+            ? t._dropWandIds.map(id=>WANDS.find(w=>w.id===id)).filter(Boolean) : [];
+          return pool.length ? Object.assign({},pool[Math.floor(Math.random()*pool.length)]) : null;
+        })();
+        const eDmg2   = eq2 ? (eq2.dmg[0]+eq2.dmg[1])/2 : t.dmg;
+        const eRange2 = eq2 ? eq2.range : (t.range||60);
+        const eRate2  = eq2 ? eq2.spd   : (t.attackRate||1.0);
+        const eColor2 = eq2 ? eq2.proj   : t.color;
+        enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:eDmg2,color:t.color,projColor:eColor2,r:t.r,name:t.name,
+          elev:getElev(wx,wy),attackCd:0,attackRate:eRate2,aggroRange:t.aggroRange||200,wanderAngle:Math.random()*Math.PI*2,
+          drops:drops2,slowTimer:0,dotTimer:0,ranged:eq2?true:(t.ranged||false),range:eRange2,wand:eq2,phase:0});
       }
     }
   }else if(gameState==='dead'){
