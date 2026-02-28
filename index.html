@@ -1674,12 +1674,14 @@ function playerShoot(dt){
   const baseDmg=(w?w.dmg[0]:5)+Math.random()*((w?w.dmg[1]:8)-(w?w.dmg[0]:5));
   const projSpd=12;
   const projRange=w?w.range:40;
+  const pBaseY3 = getWorldY3(player.wx, player.wy) + U*0.3; // 腰部高度
   projectiles.push({
     wx:player.wx,wy:player.wy,
     vx:nx*projSpd,vy:ny*projSpd,
+    wy3:pBaseY3,  // 当前3D高度
     dmg:baseDmg*dmgMult,
     color:w?w.proj:'#e2e8f0',
-    life:projRange/projSpd,   // 飞行时间 = 射程/速度
+    life:projRange/projSpd,
     r:w&&w.aoe>0?8:5,
     aoe:w?w.aoe:0,pierce:w?!!w.pierce:false,
     slow:w?!!w.slow:false,vamp:w?!!w.vamp:false,
@@ -1723,15 +1725,17 @@ function updateEnemies(dt){
           const ang=Math.atan2(player.wy-e.wy,player.wx-e.wx);
           const eProjSpd=12;
           const ew=e.wand;
+          const eBaseY3 = getWorldY3(e.wx, e.wy) + U*0.3;
           projectiles.push({
             wx:e.wx+Math.cos(ang)*e.r,
             wy:e.wy+Math.sin(ang)*e.r,
             vx:Math.cos(ang)*eProjSpd,
             vy:Math.sin(ang)*eProjSpd,
+            wy3:eBaseY3,  // 3D高度
             dmg:e.dmg,
             color:e.projColor||e.color,
             r:ew&&ew.aoe>0?8:6,
-            life:e.range/eProjSpd,   // 射程限制
+            life:e.range/eProjSpd,
             fromElev:e.elev,
             fromEnemy:true,
             hit:new Set(),
@@ -1767,11 +1771,19 @@ function updateProjectiles(dt){
     p.life-=dt;
     if(p.life<=0||isSolid(p.wx,p.wy)){projectiles.splice(i,1);continue;}
 
+    // 弹丸3D高度：平滑跟随地形（像贴着坡面飞），腰部偏移
+    const terrainY = getWorldY3(p.wx, p.wy);
+    const targetY3 = terrainY + U*0.3;
+    if(p.wy3===undefined) p.wy3 = targetY3;
+    p.wy3 += (targetY3 - p.wy3) * Math.min(1, 12*dt); // 快速跟随地形
+
     let killed=false;
 
     // 敌人弹丸：只打玩家
     if(p.fromEnemy){
-      if(dist(p.wx,p.wy,player.wx,player.wy)<player.r+p.r){
+      const playerY3 = getWorldY3(player.wx, player.wy) + U*0.3;
+      const yDiff = Math.abs(p.wy3 - playerY3);
+      if(yDiff < U*0.5 && dist(p.wx,p.wy,player.wx,player.wy)<player.r+p.r){
         const rawDmg=p.dmg+Math.random()*4-2;
         const dmg=Math.max(1,rawDmg-player.def*0.4);
         player.hp=Math.max(0,player.hp-dmg);
@@ -1788,7 +1800,9 @@ function updateProjectiles(dt){
     // 玩家弹丸：打敌人
     for(const e of enemies){
       if(p.hit.has(e))continue;
-      if(!canAttack(p.fromElev,e.elev))continue;
+      // 高度检测：弹丸wy3必须在目标高度范围内
+      const enemyY3 = getWorldY3(e.wx, e.wy) + U*0.3;
+      if(Math.abs(p.wy3 - enemyY3) > U*0.6) continue;
       if(dist(p.wx,p.wy,e.wx,e.wy)<e.r+p.r){
         p.hit.add(e);
         e.hp-=p.dmg;
@@ -1841,13 +1855,14 @@ function updateProjectiles(dt){
       // 立即在3D场景建mesh
       const sc=0.3;
       const mat=new THREE.MeshLambertMaterial({color:0xcc4444,emissive:0x220000});
+      const corpseGroundY = getWorldY3(e2.wx, e2.wy);
       const box=new THREE.Mesh(new THREE.BoxGeometry(U*sc,U*sc*0.7,U*sc),mat);
-      box.position.set(e2.wx,U*sc*0.35,e2.wy);
+      box.position.set(e2.wx, corpseGroundY + U*sc*0.35, e2.wy);
       scene3.add(box);
       chestMeshes3.push(box);
       const pillarMat=new THREE.MeshBasicMaterial({color:0xcc4444});
       const pillar=new THREE.Mesh(new THREE.CylinderGeometry(2,2,U*0.5,6),pillarMat);
-      pillar.position.set(e2.wx,U*sc*0.7+U*0.25,e2.wy);
+      pillar.position.set(e2.wx, corpseGroundY + U*sc*0.7+U*0.25, e2.wy);
       scene3.add(pillar);
       chestMeshes3.push(pillar);
 
@@ -2937,7 +2952,7 @@ function syncEntities3() {
     const m = projMeshes3[i];
     m.visible = true;
     m.material = getProjMat3(p.color);
-    m.position.set(p.wx, U * 0.35, p.wy);  // 固定飞行高度，不贴地
+    m.position.set(p.wx, p.wy3 !== undefined ? p.wy3 : U*0.35, p.wy);
   }
 }
 
@@ -2951,8 +2966,9 @@ function buildChestMeshes3() {
       color: ch.gradeColor || 0xc8a030,
       emissive: ch.gradeEmissive || 0x221000
     });
+    const chGroundY = getWorldY3(ch.wx, ch.wy);
     const m = new THREE.Mesh(new THREE.BoxGeometry(U*sc, U*sc*0.7, U*sc), mat);
-    m.position.set(ch.wx, U*sc*0.35, ch.wy);
+    m.position.set(ch.wx, chGroundY + U*sc*0.35, ch.wy);
     m.castShadow = true;
     scene3.add(m);
     chestMeshes3.push(m);
@@ -2960,7 +2976,7 @@ function buildChestMeshes3() {
     // 等级标牌（小竖杆）
     const pillarMat = new THREE.MeshBasicMaterial({ color: ch.gradeColor || 0xc8a030 });
     const pillar = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, U*0.6, 6), pillarMat);
-    pillar.position.set(ch.wx, U*sc*0.7+U*0.3, ch.wy);
+    pillar.position.set(ch.wx, chGroundY + U*sc*0.7+U*0.3, ch.wy);
     scene3.add(pillar);
     chestMeshes3.push(pillar);
   }
