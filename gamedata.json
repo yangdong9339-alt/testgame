@@ -391,7 +391,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 15,
       "desc": "伤害×1"
     },
@@ -408,7 +408,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 35,
       "desc": "伤害×1.4"
     },
@@ -425,7 +425,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 70,
       "desc": "伤害×2"
     },
@@ -442,7 +442,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 150,
       "desc": "伤害×3.5"
     },
@@ -459,7 +459,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 15,
       "desc": "伤害×1"
     },
@@ -476,7 +476,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 35,
       "desc": "伤害×1.4"
     },
@@ -493,7 +493,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 70,
       "desc": "伤害×2"
     },
@@ -510,7 +510,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 150,
       "desc": "伤害×3.5"
     },
@@ -527,7 +527,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 15,
       "desc": "伤害×1"
     },
@@ -544,7 +544,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 35,
       "desc": "伤害×1.4"
     },
@@ -561,7 +561,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 70,
       "desc": "伤害×2"
     },
@@ -578,7 +578,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 150,
       "desc": "伤害×3.5"
     },
@@ -595,7 +595,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 15,
       "desc": "伤害×1"
     },
@@ -612,7 +612,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 35,
       "desc": "伤害×1.4"
     },
@@ -629,7 +629,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 70,
       "desc": "伤害×2"
     },
@@ -646,7 +646,7 @@
         1,
         1
       ],
-      "stackMax": 99,
+      "stackMax": 60,
       "basePrice": 150,
       "desc": "伤害×3.5"
     }
@@ -823,6 +823,8 @@
     "CHEST_B_COUNT": 10,
     "CHEST_A_COUNT": 8,
     "CHEST_S_COUNT": 5,
-    "MARKET_PRICE_VARIANCE": 0.4
+    "MARKET_PRICE_VARIANCE": 0.4,
+    "CRYSTAL_STACK_MAX": 60,
+    "CRYSTAL_BUY_QTY": 20
   }
 }

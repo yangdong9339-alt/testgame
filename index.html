@@ -727,6 +727,8 @@ let CONFIG={
   CHEST_A_COUNT: 8,
   CHEST_S_COUNT: 5,
   MARKET_PRICE_VARIANCE: 0.4,
+  CRYSTAL_STACK_MAX: 60,
+  CRYSTAL_BUY_QTY:  20,
 };
 const COLS=Math.ceil(MAP_W/TILE),ROWS=Math.ceil(MAP_H/TILE);
 const PICKUP_TIME=1.8;
@@ -831,7 +833,7 @@ async function loadGameData(){
 
 // ── 内置兜底数据（gamedata.json 不可用时使用）──
 const BUILTIN_GAMEDATA = {
-  config: {ENEMY_INITIAL:14,ENEMY_MAX:8,ENEMY_RESPAWN:2,PLAYER_HP:100,PLAYER_SPD:2.9,PLAYER_START_GOLD:1000,PICKUP_RANGE:46,CHEST_B_COUNT:10,CHEST_A_COUNT:8,CHEST_S_COUNT:5,MARKET_PRICE_VARIANCE:0.4},
+  config: {ENEMY_INITIAL:14,ENEMY_MAX:8,ENEMY_RESPAWN:2,PLAYER_HP:100,PLAYER_SPD:2.9,PLAYER_START_GOLD:1000,PICKUP_RANGE:46,CHEST_B_COUNT:10,CHEST_A_COUNT:8,CHEST_S_COUNT:5,MARKET_PRICE_VARIANCE:0.4,CRYSTAL_STACK_MAX:60,CRYSTAL_BUY_QTY:20},
   wands:[
     {id:'ember',   name:'EMBER WAND',  icon:'🔥',dmg:[12,18],range:160,spd:1.5,color:'#f97316',proj:'#fb923c',desc:'火焰·中距',   size:[1,3],basePrice:120,aoe:0},
     {id:'frost',   name:'FROST STAFF', icon:'❄️', dmg:[8,14], range:240,spd:0.9,color:'#67e8f9',proj:'#a5f3fc',desc:'冰霜·远距·减速',size:[1,3],basePrice:150,slow:true,aoe:0},
@@ -866,7 +868,7 @@ const BUILTIN_GAMEDATA = {
     elems.forEach(el=>tiers.forEach(ti=>out.push({
       id:`crystal_${el}_${ti.t}`,name:`${ti.n}·${cn[el]}`,icon:icons[el],
       type:'crystal',elem:el,tier:ti.t,dmgMult:ti.m,color:colors[el],
-      size:[1,1],stackMax:99,basePrice:ti.p,desc:`伤害×${ti.m}`,
+      size:[1,1],stackMax:60,basePrice:ti.p,desc:`伤害×${ti.m}`,
     })));
     return out;
   })(),
@@ -906,6 +908,7 @@ let player={};
 let cam={x:0, y:0}; // 视口左上角世界坐标
 let pickupTarget=null,pickupProgress=0,pickupHolding=false;
 let selectedInvIdx=null;
+let dragInvIdx=null;
 // Touch
 const isTouchDevice=()=>navigator.maxTouchPoints>0;
 let joystickDelta={x:0,y:0},joystickActive=false,joystickOrigin={x:0,y:0};
@@ -1321,17 +1324,46 @@ function updateInvGrid(){
       `color:${it.color};`;
     // Type badge color
     const typeColor=it.type==='armor'?'#94a3b8':it.type==='boots'?'#4ade80':it.type==='acc'?'#fbbf24':'#c084fc';
+    const isCrystal=it.type==='crystal';
+    const SMAX=CONFIG.CRYSTAL_STACK_MAX||60;
     block.innerHTML=
       `<span style="font-size:16px;line-height:1">${it.icon}</span>`+
       `<span class="inv-item-name" style="color:${typeColor}">${it.name.split(' ')[0]}</span>`+
+      (isCrystal?`<span style="font-size:7px;color:#a855f7;font-weight:bold">${it.qty||1}/${SMAX}</span>`:'')+
       (isEq?`<span style="font-size:5px;color:#4ade80;line-height:1">▶EQ</span>`:'');
-    block.title=`${it.name}\n${it.desc||''}`;
+    block.title=`${it.name}\n${it.desc||''}${isCrystal?' — 拖拽到同类合并':''}`;
+    if(isCrystal){
+      block.draggable=true;
+      block.addEventListener('dragstart',e=>{
+        dragInvIdx=idx; e.dataTransfer.effectAllowed='move';
+        setTimeout(()=>block.style.opacity='0.4',0);
+      });
+      block.addEventListener('dragend',()=>{ block.style.opacity='1'; dragInvIdx=null; });
+      block.addEventListener('dragover',e=>{
+        if(dragInvIdx===null||dragInvIdx===idx) return;
+        const src=player.inventory[dragInvIdx]; const si=src?.item||src?.wand;
+        if(si?.id===it.id&&(it.qty||1)<SMAX){ e.preventDefault(); block.style.boxShadow='0 0 0 2px #a855f7'; }
+      });
+      block.addEventListener('dragleave',()=>{ block.style.boxShadow=''; });
+      block.addEventListener('drop',e=>{
+        e.preventDefault(); block.style.boxShadow='';
+        if(dragInvIdx===null||dragInvIdx===idx) return;
+        const srcEntry=player.inventory[dragInvIdx]; const si=srcEntry?.item||srcEntry?.wand;
+        if(!si||si.id!==it.id) return;
+        const canTake=Math.min(si.qty||1, SMAX-(it.qty||1));
+        if(canTake<=0){ addLog('已达上限 '+SMAX,'info'); return; }
+        it.qty=(it.qty||1)+canTake;
+        si.qty=(si.qty||1)-canTake;
+        if(si.qty<=0) player.inventory.splice(player.inventory.indexOf(srcEntry),1);
+        dragInvIdx=null; updateInvGrid();
+        addLog(`合并 ×${canTake} → ${it.qty}/${SMAX}`,'info');
+      });
+    }
     block.onclick=()=>{
       selectedInvIdx=(selectedInvIdx===idx)?null:idx;
       updateInvGrid();
       document.getElementById('btn-equip').disabled=selectedInvIdx===null;
       document.getElementById('btn-drop').disabled=selectedInvIdx===null;
-      // handled below
     };
     grid.appendChild(block);
   });
@@ -1384,10 +1416,10 @@ function equipSelected(){
     addLog(`装备饰品: ${it.name}`,'info');
     recalcStats();
   } else if(it.type==='crystal'){
-    // 弹药：加入弹药池
-    const existing=player.ammoPool.find(a=>a.crystal.id===it.id);
-    if(existing){ existing.qty+=it.qty||1; }
-    else { player.ammoPool.push({crystal:Object.assign({},it),qty:it.qty||1}); }
+    const MAX=CONFIG.CRYSTAL_STACK_MAX||60;
+    const existing=player.ammoPool.find(a=>a.crystal.id===it.id&&a.qty<MAX);
+    if(existing){ existing.qty=Math.min(MAX, existing.qty+(it.qty||1)); }
+    else { player.ammoPool.push({crystal:Object.assign({},it),qty:Math.min(MAX,it.qty||1)}); }
     player.inventory.splice(selectedInvIdx,1);
     addLog(`装填弹药: ${it.name} ×${it.qty||1}`,'info');
     updateAmmoHud();
@@ -2057,7 +2089,7 @@ function renderHomebase(){
       <div class="mi-info">
         <div class="mi-name">${w.name} <span style="font-size:6px;color:${typeClr}">${typeLabel}</span></div>
         <div class="mi-price">
-          <span class="price-val">◈${price}</span>
+          <span class="price-val">${w.type==='crystal'?`◈${price}×${CONFIG.CRYSTAL_BUY_QTY||20}=◈${Math.round(price*(CONFIG.CRYSTAL_BUY_QTY||20))}`:`◈${price}`}</span>
           <span class="price-trend ${trend}">${trendIcon}</span>
           · ${w.desc||''}
         </div>
@@ -2065,8 +2097,8 @@ function renderHomebase(){
       <div style="display:flex;flex-direction:column;gap:4px">
         <button class="mi-action mi-sell" ${inStash?'':'disabled'}
           onclick="sellItem('${w.id}',${price})">卖出</button>
-        <button class="mi-action mi-buy" ${gold>=price?'':'disabled'}
-          onclick="buyItem('${w.id}',${price})">◈${price}</button>
+        <button class="mi-action mi-buy" ${(()=>{ const tp=w.type==='crystal'?Math.round(price*(CONFIG.CRYSTAL_BUY_QTY||20)):price; return gold>=tp?'':'disabled'; })()}
+          onclick="buyItem('${w.id}',${price})">${(()=>{ const tp=w.type==='crystal'?Math.round(price*(CONFIG.CRYSTAL_BUY_QTY||20)):price; return '◈'+tp; })()}</button>
       </div>
     `;
     ml.appendChild(div);
@@ -2199,7 +2231,7 @@ function clickAmmoSlot(i){
     if(it.type!=='crystal'){return;}
     if(ammoSlots[i]&&ammoSlots[i].crystal.id===it.id){
       // Stack
-      ammoSlots[i].qty=Math.min(99,(ammoSlots[i].qty||0)+(it.qty||1));
+      ammoSlots[i].qty=Math.min(CONFIG.CRYSTAL_STACK_MAX||60,(ammoSlots[i].qty||0)+(it.qty||1));
       stash.splice(selectedStorage,1);
     } else if(!ammoSlots[i]){
       ammoSlots[i]={crystal:Object.assign({},it),qty:it.qty||1};
@@ -2226,10 +2258,10 @@ function clearAmmoSlot(i,e){
 }
 
 function addToStash(it){
-  // If crystal, try stacking
   if(it.type==='crystal'){
-    const existing=stash.find(s=>s.id===it.id&&s.type==='crystal'&&(s.qty||1)<99);
-    if(existing){existing.qty=Math.min(99,(existing.qty||1)+(it.qty||1));return;}
+    const MAX=CONFIG.CRYSTAL_STACK_MAX||60;
+    const existing=stash.find(s=>s.id===it.id&&s.type==='crystal'&&(s.qty||1)<MAX);
+    if(existing){existing.qty=Math.min(MAX,(existing.qty||1)+(it.qty||1));return;}
   }
   if(stash.length<20) stash.push(Object.assign({},it));
 }
@@ -2244,15 +2276,21 @@ function sellItem(id,price){
 }
 
 function buyItem(id,price){
-  if(gold<price){addLog('金币不足','dmg');return;}
-  if(stash.length>=20){addLog('仓库已满','dmg');return;}
   const it=ALL_ITEMS.find(w=>w.id===id);
   if(!it)return;
   const item=Object.assign({},it);
-  if(item.type==='crystal') item.qty=10;
+  let totalPrice=price;
+  if(item.type==='crystal'){
+    const BUY_QTY=CONFIG.CRYSTAL_BUY_QTY||20;
+    item.qty=BUY_QTY;
+    totalPrice=Math.round(price*BUY_QTY);
+  }
+  if(gold<totalPrice){addLog(`金币不足，需◈${totalPrice}`,'dmg');return;}
+  if(stash.length>=20){addLog('仓库已满','dmg');return;}
   addToStash(item);
-  gold-=price;
-  addLog(`购买 ${it.name}`,'info');
+  gold-=totalPrice;
+  document.getElementById('gold-display').textContent='◈ '+gold;
+  addLog(`购买 ${it.name}${item.type==='crystal'?' ×'+item.qty+' ◈'+totalPrice:''}`, 'info');
   renderHomebase();
 }
 
