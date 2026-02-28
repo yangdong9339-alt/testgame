@@ -2439,16 +2439,13 @@ let camAngle3   = 45;   // 俯角（度）
 let orthoSize3  = 420;
 const ASPECT3   = W / H;
 
-const camera3 = new THREE.OrthographicCamera(
-  -orthoSize3 * ASPECT3, orthoSize3 * ASPECT3,
-   orthoSize3, -orthoSize3, 0.1, 8000
-);
+// 透视相机：有近大远小，高台才有真3D立体感
+const camera3 = new THREE.PerspectiveCamera(45, ASPECT3, 1, 12000);
 
 function updateFrustum3() {
-  camera3.left   = -orthoSize3 * ASPECT3;
-  camera3.right  =  orthoSize3 * ASPECT3;
-  camera3.top    =  orthoSize3;
-  camera3.bottom = -orthoSize3;
+  // 透视相机用 FOV 和 zoom 控制视野大小（对应原来的 orthoSize3 slider）
+  camera3.fov = Math.max(10, Math.min(90, 45 * (420 / orthoSize3)));
+  camera3.aspect = ASPECT3;
   camera3.updateProjectionMatrix();
 }
 updateFrustum3();
