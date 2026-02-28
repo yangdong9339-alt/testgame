@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARCANE EXTRACTION v2 r1772177614</title>
+<title>ARCANE EXTRACTION v2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -15,85 +14,55 @@ canvas{display:block}
 
 /* ── HUD ── */
 #hud{position:absolute;inset:0;pointer-events:none}
-#top-bar{position:absolute;top:0;left:0;right:0;height:36px;background:rgba(10,10,16,0.72);display:flex;align-items:center;padding:0 14px;gap:16px;border-bottom:1px solid #2a2a3a}
-#zone-label{font-family:'Cinzel',serif;font-size:10px;color:#6a6880;letter-spacing:3px;flex:1;text-align:center}
-.stat-block{display:flex;flex-direction:column;gap:2px;min-width:110px}
-.bar-label{font-size:6px;color:#5a5870;letter-spacing:2px}
-.bar-bg{height:5px;background:#1e1e2c;border:1px solid #2e2e42;position:relative;border-radius:2px}
+#top-bar{position:absolute;top:0;left:0;right:0;height:38px;background:linear-gradient(180deg,rgba(247,246,240,0.92),transparent);display:flex;align-items:center;padding:0 12px;gap:16px;border-bottom:1px solid #e5e4de}
+#zone-label{font-family:'Cinzel',serif;font-size:10px;color:#9a9488;letter-spacing:3px;flex:1;text-align:center}
+.stat-block{display:flex;flex-direction:column;gap:2px;min-width:120px}
+.bar-label{font-size:7px;color:#9a9488;letter-spacing:2px}
+.bar-bg{height:6px;background:#e5e4de;border:1px solid #d0cfc8;position:relative;border-radius:2px}
 .bar-fill{height:100%;border-radius:2px;transition:width .15s}
 #hp-fill{background:linear-gradient(90deg,#dc2626,#f87171)}
 #xp-fill{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
 #gold-display{font-size:11px;color:#d97706;white-space:nowrap;font-weight:bold}
 
-/* 战斗日志 左上 */
-#log{position:absolute;top:42px;left:10px;width:210px;max-height:80px;overflow:hidden;display:flex;flex-direction:column;gap:1px;pointer-events:none}
-.log-line{font-size:8px;color:#6a6880;line-height:1.4;animation:fadeIn .3s}
-.log-line.imp{color:#d97706}.log-line.dmg{color:#f87171}.log-line.loot{color:#4ade80}.log-line.info{color:#67e8f9}
+#log{position:absolute;top:44px;left:10px;width:200px;max-height:72px;overflow:hidden;display:flex;flex-direction:column;gap:1px;pointer-events:none}
+.log-line{font-size:8px;color:#9a9488;line-height:1.4;animation:fadeIn .3s}
+.log-line.imp{color:#d97706}.log-line.dmg{color:#dc2626}.log-line.loot{color:#15803d}.log-line.info{color:#1d4ed8}
 @keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 
-/* 小地图 右上 */
-#minimap{position:absolute;top:42px;right:10px;width:90px;height:90px;border:1px solid #2a2a3a;background:#0c0c18;pointer-events:none;border-radius:3px}
+/* Minimap */
+#minimap{position:absolute;top:10px;right:10px;width:90px;height:90px;border:1px solid #d0cfc8;background:#e5e4de;pointer-events:none;border-radius:2px}
 
-/* 高度标记 小地图下方 */
-#elev-badge{position:absolute;top:138px;right:10px;font-size:7px;letter-spacing:2px;text-align:right;pointer-events:none}
+/* Elevation indicator */
+#elev-badge{position:absolute;top:44px;right:10px;font-size:8px;color:#7c3aed;letter-spacing:2px;text-align:right;pointer-events:none;margin-top:96px}
 
-/* 拾取进度条 底部中央 */
-#pickup-bar-wrap{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);width:180px;display:none;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
-#pickup-label{font-size:8px;color:#fbbf24;letter-spacing:2px}
-#pickup-bg{width:180px;height:6px;background:#1e1e2c;border:1px solid #2e2e42;border-radius:3px}
-#pickup-fill{height:100%;background:linear-gradient(90deg,#d97706,#fbbf24);width:0%;border-radius:3px}
+/* Pickup bar */
+#pickup-bar-wrap{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);width:160px;display:none;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#pickup-label{font-size:8px;color:#d97706;letter-spacing:2px}
+#pickup-bg{width:160px;height:8px;background:#e5e4de;border:1px solid #d0cfc8;border-radius:2px}
+#pickup-fill{height:100%;background:linear-gradient(90deg,#d97706,#f59e0b);width:0%;transition:width .05s linear;border-radius:2px}
 
-/* 武器信息 左下 */
-#weapon-hud{position:absolute;bottom:10px;left:10px;padding:6px 10px;border:1px solid #2a2a3a;background:rgba(10,10,16,0.88);pointer-events:none;min-width:120px;border-radius:4px}
+/* Equipped weapon */
+#weapon-hud{position:absolute;bottom:10px;left:10px;padding:6px 10px;border:1px solid #d0cfc8;background:rgba(247,246,240,0.95);pointer-events:none;min-width:110px;border-radius:4px}
 #weapon-name{font-size:9px;color:#d97706;font-family:'Cinzel',serif;margin-bottom:2px}
-#weapon-stats{font-size:7px;color:#5a5870;line-height:1.6}
+#weapon-stats{font-size:8px;color:#6b6860;line-height:1.5}
 
-/* ── 右侧面板系统 ── */
-#side-panel{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:row;align-items:flex-end;gap:4px;pointer-events:all}
-
-/* Tab 按钮列（始终可见） */
-#side-tabs{display:flex;flex-direction:column;gap:4px}
-.side-tab{width:36px;height:36px;background:rgba(10,10,16,0.88);border:1px solid #2e2e42;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;color:#5a5870;transition:all .15s;line-height:1;gap:1px;padding:0}
-.side-tab span:last-child{font-size:5px;letter-spacing:0.5px;font-family:'Share Tech Mono',monospace;color:#3a3a52}
-.side-tab:hover,.side-tab.active{border-color:#d97706;background:rgba(18,18,28,0.96);color:#d97706}
-.side-tab.active span:last-child{color:#d97706}
-
-/* 面板内容（收起时隐藏） */
-.side-content{background:rgba(10,10,16,0.94);border:1px solid #2e2e42;padding:8px;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);width:220px}
-.raid-panel-title{font-size:6px;color:#4a4a62;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid #1e1e2e;padding-bottom:3px;text-transform:uppercase}
-
-/* 装备槽 */
-#raid-equip-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:2px}
-.req-slot{background:#12121e;border:1px solid #22223a;border-radius:4px;padding:4px 5px;cursor:pointer;display:flex;align-items:center;gap:4px;min-height:34px;transition:border-color .15s}
-.req-slot:hover{border-color:#d97706}
-.req-slot.filled{border-color:#15803d44;background:#0e1e14}
-.req-icon{font-size:13px;flex-shrink:0}
-.req-info{flex:1;min-width:0}
-.req-label{font-size:5px;color:#3a3a52;letter-spacing:1px;display:block;text-transform:uppercase}
-.req-name{font-size:7px;color:#b0b0cc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;margin-top:1px}
-.req-stat{font-size:5px;color:#5a5a78;margin-top:1px;display:block}
-
-/* 背包格子 */
-#inv-grid{display:grid;grid-template-columns:repeat(5,36px);grid-template-rows:repeat(4,36px);gap:2px;position:relative;margin-bottom:6px}
-.inv-cell{width:36px;height:36px;border:1px solid #1e1e2e;background:#0c0c18;position:relative;border-radius:2px}
-.inv-item-block{position:absolute;border:1px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;cursor:pointer;z-index:2;border-radius:2px}
-.inv-item-block:hover{filter:brightness(1.15)}
+/* ── GRID INVENTORY PANEL ── */
+#inv-panel{position:absolute;bottom:10px;right:10px;background:rgba(247,246,240,0.97);border:1px solid #d0cfc8;padding:8px;width:220px;pointer-events:all;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.1)}
+#inv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+#inv-title{font-size:8px;color:#9a9488;letter-spacing:2px}
+#inv-weight{font-size:8px;color:#9a9488}
+#inv-grid{display:grid;grid-template-columns:repeat(6,30px);grid-template-rows:repeat(4,30px);gap:2px;position:relative}
+.inv-cell{width:30px;height:30px;border:1px solid #e5e4de;background:#f0efe9;position:relative;border-radius:2px}
+.inv-cell.occupied{border-color:#d0cfc8}
+.inv-item-block{position:absolute;border:1px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;cursor:pointer;z-index:2;gap:0px;border-radius:2px}
+.inv-item-block:hover{filter:brightness(0.95)}
 .inv-item-block.selected{box-shadow:0 0 0 2px #d97706}
-.inv-item-block.is-equipped{box-shadow:0 0 0 2px #4ade80}
-.inv-item-name{font-size:5px;color:#ffffff55;line-height:1;padding:0 1px;text-align:center;overflow:hidden;max-width:100%}
-#inv-actions{display:flex;gap:3px;margin-top:2px}
-.inv-btn{flex:1;padding:4px 2px;font-family:'Share Tech Mono',monospace;font-size:7px;background:none;border:1px solid #2e2e42;color:#8080a0;cursor:pointer;letter-spacing:1px;border-radius:3px;transition:all .12s}
+.inv-item-block.is-equipped{box-shadow:0 0 0 2px #15803d}
+.inv-item-name{font-size:5px;color:#1a1a1888;line-height:1;padding:0 1px;text-align:center;overflow:hidden;max-width:100%}
+#inv-actions{display:flex;gap:4px;margin-top:6px}
+.inv-btn{flex:1;padding:4px;font-family:'Share Tech Mono',monospace;font-size:8px;background:none;border:1px solid #d0cfc8;color:#1a1a18;cursor:pointer;letter-spacing:1px;border-radius:3px}
 .inv-btn:hover{border-color:#d97706;color:#d97706}
-.inv-btn:disabled{opacity:.2;cursor:default}
-
-/* 战利品格子 */
-#loot-grid{display:grid;grid-template-columns:repeat(4,46px);gap:3px;margin-bottom:6px;max-height:200px;overflow-y:auto}
-.loot-cell{width:46px;height:46px;border:1px solid #1e1e2e;background:#0c0c18;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:17px;transition:border-color .12s}
-.loot-cell:hover{border-color:#d97706;background:#14141e}
-.loot-cell.selected{border-color:#d97706;background:#1a1420}
-.loot-cell .lc-name{font-size:5px;color:#5a5a78;position:absolute;bottom:2px;width:100%;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 2px}
-.loot-cell .lc-qty{position:absolute;top:2px;right:3px;font-size:6px;color:#fbbf24;font-weight:bold}
-#loot-actions{display:flex;gap:3px}
+.inv-btn:disabled{opacity:.3;cursor:default}
 
 /* ── HOMEBASE SCREEN ── */
 #homebase{position:absolute;inset:0;background:#f7f6f0;display:none;flex-direction:column}
@@ -173,6 +142,13 @@ canvas{display:block}
 .loadout-slot.selected-loadout{border-color:#d97706!important}
 
 
+
+/* ── IN-RAID EQUIPMENT ROW ── */
+#inv-equip-row{display:flex;gap:3px;margin-bottom:5px}
+.inv-eq-slot{width:46px;height:46px;border:1px solid #d0cfc8;background:#f0efe9;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;position:relative;flex-shrink:0}
+.inv-eq-slot .ieq-icon{font-size:18px;line-height:1}
+.inv-eq-slot .ieq-label{font-size:5px;color:#9a9488;letter-spacing:1px;position:absolute;bottom:2px}
+.inv-eq-slot.filled{border-color:#15803d66;background:#f0fdf4}
 /* ── OVERLAY SCREENS ── */
 .overlay-screen{position:absolute;inset:0;background:rgba(247,246,240,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .overlay-screen h1{font-family:'Cinzel',serif;letter-spacing:6px;color:#1a1a18}
@@ -240,50 +216,14 @@ canvas{display:block}
 #btn-save-now{background:none;border:1px solid #15803d66;color:#15803d;font-family:'Share Tech Mono',monospace;font-size:7px;padding:3px 7px;cursor:pointer;letter-spacing:1px;border-radius:3px}
 #btn-save-now:hover{border-color:#15803d;background:#15803d15}
 #save-status{font-size:7px;color:#9a9488;min-width:60px;text-align:right}
-
-/* ── SIDE PANEL SYSTEM ── */
-#side-panel{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:row;align-items:flex-end;gap:4px;pointer-events:all}
-#side-tabs{display:flex;flex-direction:column;gap:4px}
-.side-tab{width:38px;height:38px;background:rgba(10,10,16,0.88);border:1px solid #2e2e42;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;color:#5a5870;transition:all .15s;padding:2px;line-height:1.1}
-.side-tab span{font-size:5px;letter-spacing:0.5px;font-family:'Share Tech Mono',monospace;color:#3a3a52}
-.side-tab:hover{border-color:#d97706;color:#d97706}
-.side-tab:hover span{color:#d97706}
-.side-tab.active{border-color:#d97706;background:rgba(22,18,10,0.96);color:#d97706}
-.side-tab.active span{color:#d97706}
-.side-content{background:rgba(10,10,16,0.94);border:1px solid #2e2e42;padding:8px;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,0.55);width:215px}
-
-/* 弹药槽 */
-#raid-ammo-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
-.ammo-slot{background:#12121e;border:1px solid #22223a;border-radius:4px;padding:3px 5px;display:flex;align-items:center;gap:4px;min-height:28px}
-.ammo-slot.filled{border-color:#7c3aed55;background:#160e22}
-.ammo-icon{font-size:12px;flex-shrink:0}
-.ammo-qty{font-size:8px;color:#a855f7;font-weight:bold;min-width:20px}
-.ammo-name{font-size:5px;color:#5a5a78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
-<!-- ── Loading Screen ── -->
-<div id="load-screen" style="
-  position:fixed;inset:0;z-index:9999;
-  background:#060a10;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-family:Consolas,monospace;color:#4a8aba;
-">
-  <div style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#8ac4e8;margin-bottom:12px">
-    ⚗ ARCANE EXTRACTION
-  </div>
-  <div id="load-msg" style="font-size:13px;opacity:0.7">加载游戏数据…</div>
-  <div style="margin-top:18px;width:200px;height:3px;background:#0d1a28;border-radius:2px;overflow:hidden">
-    <div style="height:100%;background:#4a8aba;animation:ldbar 1.2s ease-in-out infinite alternate;transform-origin:left"></div>
-  </div>
-  <style>@keyframes ldbar{from{width:20%}to{width:90%}}</style>
-</div>
 <div id="app">
-  <canvas id="three-canvas" width="900" height="600" style="position:absolute;top:0;left:0"></canvas>
+  <canvas id="canvas" width="900" height="600"></canvas>
 
   <!-- IN-RAID HUD -->
   <div id="hud">
-    <!-- 顶栏 -->
     <div id="top-bar">
       <div class="stat-block">
         <div class="bar-label">VITALITY</div>
@@ -296,87 +236,28 @@ canvas{display:block}
       <div id="zone-label">FORSAKEN SANCTUM</div>
       <div id="gold-display">◈ 0</div>
     </div>
-    <!-- 战斗日志 左上 -->
     <div id="log"></div>
-    <!-- 小地图 右上 -->
     <div id="minimap"><canvas id="mm-canvas" width="90" height="90"></canvas></div>
     <div id="elev-badge"></div>
-    <!-- 拾取进度条 底部中央 -->
     <div id="pickup-bar-wrap">
       <div id="pickup-label">LOOTING...</div>
       <div id="pickup-bg"><div id="pickup-fill"></div></div>
     </div>
-    <!-- 武器信息 左下 -->
     <div id="weapon-hud">
       <div id="weapon-name">BARE HANDS</div>
       <div id="weapon-stats">DMG 5–8 · RNG 40</div>
       <div id="ammo-hud" style="font-size:8px;color:#a855f7;margin-top:3px"></div>
     </div>
-
-    <!-- 相机调节滑条 左下角 -->
-    <div id="cam-controls" style="position:absolute;bottom:10px;left:140px;background:rgba(10,10,16,0.82);border:1px solid #2e2e42;border-radius:5px;padding:6px 10px;pointer-events:all;font-size:7px;color:#5a5870;display:flex;flex-direction:column;gap:4px;min-width:160px">
-      <div style="font-size:6px;color:#3a3a52;letter-spacing:2px;margin-bottom:2px">CAMERA</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="width:20px">H</span>
-        <input id="sl-h" type="range" min="200" max="2000" step="50" value="800" style="flex:1;height:3px;accent-color:#d97706">
-        <span id="val-h" style="width:28px;text-align:right">800</span>
+    <div id="inv-panel">
+      <div id="inv-header">
+        <div id="inv-title">BACKPACK</div>
+        <div id="inv-weight">0 / 6 slots</div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="width:20px">ANG</span>
-        <input id="sl-a" type="range" min="10" max="80" step="1" value="45" style="flex:1;height:3px;accent-color:#d97706">
-        <span id="val-a" style="width:28px;text-align:right">45</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="width:20px">Z</span>
-        <input id="sl-z" type="range" min="100" max="1200" step="20" value="420" style="flex:1;height:3px;accent-color:#d97706">
-        <span id="val-z" style="width:28px;text-align:right">420</span>
-      </div>
-    </div>
-    <!-- 右侧：Tab按钮 + 面板 -->
-    <div id="side-panel">
-      <div id="side-tabs">
-        <button class="side-tab" id="tab-equip" onclick="togglePanel('equip')" title="装备">⚔<br><span>装备</span></button>
-        <button class="side-tab" id="tab-bag"   onclick="togglePanel('bag')"   title="背包">🎒<br><span>背包</span></button>
-      </div>
-      <!-- 装备面板 -->
-      <div id="panel-equip" class="side-content" style="display:none">
-        <div class="raid-panel-title">EQUIPMENT</div>
-        <div id="raid-equip-grid">
-          <div class="req-slot" id="req-weapon" onclick="raidEquipClick('weapon')">
-            <span class="req-icon">⚔</span><div class="req-info"><span class="req-label">WEAPON</span><span class="req-name">— empty —</span></div>
-          </div>
-          <div class="req-slot" id="req-armor" onclick="raidEquipClick('armor')">
-            <span class="req-icon">🛡</span><div class="req-info"><span class="req-label">ARMOR</span><span class="req-name">— empty —</span></div>
-          </div>
-          <div class="req-slot" id="req-boots" onclick="raidEquipClick('boots')">
-            <span class="req-icon">👢</span><div class="req-info"><span class="req-label">BOOTS</span><span class="req-name">— empty —</span></div>
-          </div>
-          <div class="req-slot" id="req-acc" onclick="raidEquipClick('acc')">
-            <span class="req-icon">💍</span><div class="req-info"><span class="req-label">ACC</span><span class="req-name">— empty —</span></div>
-          </div>
-        </div>
-        <div class="raid-panel-title" style="margin-top:8px">AMMO</div>
-        <div id="raid-ammo-grid"></div>
-      </div>
-      <!-- 背包面板 -->
-      <div id="panel-bag" class="side-content" style="display:none">
-        <div class="raid-panel-title">BACKPACK <span id="inv-weight" style="color:#5a5870;font-size:6px"></span></div>
-        <div id="inv-grid"></div>
-        <div id="inv-actions">
-          <button class="inv-btn" id="btn-equip" disabled onclick="equipSelected()">EQUIP</button>
-          <button class="inv-btn" id="btn-sell-inv" disabled onclick="sellFromInventory()" style="color:#4ade80">SELL</button>
-          <button class="inv-btn" id="btn-drop" disabled onclick="dropSelected()">DROP</button>
-        </div>
-      </div>
-      <!-- 战利品面板 拾取后自动弹出 -->
-      <div id="raid-loot" class="side-content" style="display:none">
-        <div class="raid-panel-title">LOOT — <span id="loot-source-name" style="color:#fbbf24"></span></div>
-        <div id="loot-grid"></div>
-        <div id="loot-actions">
-          <button class="inv-btn" id="btn-loot-take" disabled onclick="lootSelected()">TAKE</button>
-          <button class="inv-btn" onclick="lootAll()">ALL</button>
-          <button class="inv-btn" onclick="closeLootPanel()" style="color:#f87171">✕ CLOSE</button>
-        </div>
+      <div id="inv-grid"></div>
+      <div id="inv-actions">
+        <button class="inv-btn" id="btn-equip" disabled onclick="equipSelected()">EQUIP</button>
+        <button class="inv-btn" id="btn-sell-inv" disabled onclick="sellFromInventory()" style="color:#15803d">SELL</button>
+        <button class="inv-btn" id="btn-drop" disabled onclick="dropSelected()">DROP</button>
       </div>
     </div>
   </div>
@@ -511,6 +392,7 @@ let currentUser=null;
 let currentSlot=null;
 let saveTimer=null;
 let loginMode='login'; // 'login' | 'signup'
+
 // ── AUTH ──
 function toggleLoginMode(){
   loginMode=loginMode==='login'?'signup':'login';
@@ -554,7 +436,7 @@ async function doSignup(){
 async function doLogout(){
   await sb.auth.signOut();
   currentUser=null;currentSlot=null;
-  gold=CONFIG.PLAYER_START_GOLD||1000;stash=[];loadout=[];
+  gold=200;stash=[];loadout=[];
   equipSlots={weapon:null,armor:null,boots:null,acc:null};
   ammoSlots=[null,null,null,null];
   bagLoadout=[];
@@ -620,7 +502,7 @@ async function deleteSave(e,slot){
 
 function newGame(slot){
   currentSlot=slot;
-  gold=CONFIG.PLAYER_START_GOLD||1000;stash=[];loadout=[];
+  gold=200;stash=[];loadout=[];
   equipSlots={weapon:null,armor:null,boots:null,acc:null};
   ammoSlots=[null,null,null,null];
   bagLoadout=[];
@@ -716,175 +598,118 @@ async function initAuth(){
 // ═══════════════════════════════════════════════════════════
 const W=900,H=600,MAP_W=2000,MAP_H=1600,TILE=40;
 
-// ── GAME BALANCE CONFIG ── (loaded from gamedata.json, defaults below)
-let CONFIG={
-  ENEMY_INITIAL: 14,
-  ENEMY_MAX: 8,
-  ENEMY_RESPAWN: 2,
-  CHEST_COUNT: 20,
-  PLAYER_HP: 100,
-  PLAYER_SPD: 2.9,
-  PLAYER_START_GOLD: 1000,
-  PICKUP_RANGE: 46,
-  CHEST_B_COUNT: 10,
-  CHEST_A_COUNT: 8,
-  CHEST_S_COUNT: 5,
-  MARKET_PRICE_VARIANCE: 0.4,
+// ── GAME BALANCE CONFIG ── (edit these to tune the game)
+const CONFIG={
+  ENEMY_INITIAL: 14,   // enemies spawned at raid start
+  ENEMY_MAX: 8,        // max enemies alive at once (respawn cap)
+  ENEMY_RESPAWN: 2,    // enemies per respawn wave
+  CHEST_COUNT: 20,     // number of chests on map
 };
 const COLS=Math.ceil(MAP_W/TILE),ROWS=Math.ceil(MAP_H/TILE);
-const PICKUP_TIME=1.8;
+const PICKUP_TIME=1.8; // seconds to loot
+const PICKUP_RANGE=46;
 const JOYSTICK_MAX=40;
 
+// Elevation levels: 0=low, 1=mid, 2=high
+// High can hit all, Mid can hit Mid+Low, Low can only hit Low
 const ELEV_NAMES=['LOW GROUND','MID GROUND','HIGH GROUND'];
 const ELEV_COLORS=['#4a3a2a','#4a4a2a','#2a4a5a'];
 
-// ── 数据表（从 gamedata.json 填充，先声明为空）──
-let WANDS=[], ARMORS=[], CRYSTALS=[], ENEMY_TYPES=[];
-let ELEMENTS=['fire','ice','thunder','void'];
+// ═══════════════════════════════════════════════════════════
+// WAND DATA
+// ═══════════════════════════════════════════════════════════
+const WANDS=[
+  {id:'ember',   name:'EMBER WAND',  icon:'🔥',dmg:[12,18],range:160,spd:1.5,color:'#f97316',proj:'#fb923c',desc:'火焰·中距',   size:[1,3],basePrice:120,aoe:0},
+  {id:'frost',   name:'FROST STAFF', icon:'❄️', dmg:[8,14], range:240,spd:0.9,color:'#67e8f9',proj:'#a5f3fc',desc:'冰霜·远距·减速',size:[1,3],basePrice:150,slow:true,aoe:0},
+  {id:'thunder', name:'THUNDER ROD', icon:'⚡', dmg:[22,34],range:130,spd:0.55,color:'#fbbf24',proj:'#fde68a',desc:'雷击·高伤',  size:[1,3],basePrice:200,aoe:0},
+  {id:'void',    name:'VOID SCEPTER',icon:'🌀',dmg:[15,22],range:190,spd:1.1,color:'#a855f7',proj:'#c084fc',desc:'虚空·AOE穿透',size:[1,3],basePrice:180,aoe:32,pierce:true},
+  {id:'nature',  name:'NATURE WAND', icon:'🌿',dmg:[10,16],range:200,spd:1.3,color:'#4ade80',proj:'#86efac',desc:'自然·吸血',  size:[1,3],basePrice:160,vamp:true,aoe:0},
+  {id:'ancient', name:'ANCIENT TOME',icon:'📜',dmg:[28,44],range:260,spd:0.45,color:'#fcd34d',proj:'#fef08a',desc:'远古·超高伤',size:[1,3],basePrice:300,aoe:0},
+  {id:'poison',  name:'POISON ORB',  icon:'💀',dmg:[6,10], range:170,spd:1.6,color:'#84cc16',proj:'#bef264',desc:'毒·持续伤害', size:[1,2],basePrice:100,dot:true,aoe:0},
+  {id:'blood',   name:'BLOOD LANCE', icon:'🩸',dmg:[18,28],range:150,spd:0.8,color:'#dc2626',proj:'#f87171',desc:'血矛·高穿透', size:[1,3],basePrice:220,pierce:true,aoe:0},
+];
+
+
+// ═══════════════════════════════════════════════════════════
+// ARMOR DATA
+// ═══════════════════════════════════════════════════════════
+const ARMORS=[
+  // Robes (defense) — 1×2 grid
+  {id:'robe1', name:'TATTERED ROBE',  icon:'👘',type:'armor',tier:1,def:3, color:'#78716c',size:[1,2],basePrice:60, desc:'防御+3'},
+  {id:'robe2', name:'WOVEN MANTLE',   icon:'🥻',type:'armor',tier:2,def:7, color:'#a16207',size:[1,2],basePrice:130,desc:'防御+7'},
+  {id:'robe3', name:'ARCANE VESTMENT',icon:'🩱',type:'armor',tier:3,def:13,color:'#6366f1',size:[1,2],basePrice:240,desc:'防御+13'},
+  {id:'robe4', name:'VOID SHROUD',    icon:'🦺',type:'armor',tier:4,def:22,color:'#a855f7',size:[1,2],basePrice:400,desc:'防御+22'},
+  // Boots (move speed) — 1×2 grid
+  {id:'boot1', name:'WORN SANDALS',   icon:'👡',type:'boots',tier:1,spd:0.3,color:'#78716c',size:[1,2],basePrice:50, desc:'速度+0.3'},
+  {id:'boot2', name:'LEATHER BOOTS',  icon:'👢',type:'boots',tier:2,spd:0.6,color:'#92400e',size:[1,2],basePrice:110,desc:'速度+0.6'},
+  {id:'boot3', name:'SWIFT TREADS',   icon:'🥾',type:'boots',tier:3,spd:1.0,color:'#0891b2',size:[1,2],basePrice:200,desc:'速度+1.0'},
+  {id:'boot4', name:'PHANTOM STEPS',  icon:'👟',type:'boots',tier:4,spd:1.6,color:'#7c3aed',size:[1,2],basePrice:350,desc:'速度+1.6'},
+  // Accessories (bonus effects) — 1×1 grid
+  {id:'acc1',  name:'COPPER RING',    icon:'💍',type:'acc',  tier:1,maxHp:15,color:'#78716c',size:[1,1],basePrice:80, desc:'生命+15'},
+  {id:'acc2',  name:'SILVER AMULET',  icon:'📿',type:'acc',  tier:2,maxHp:30,color:'#94a3b8',size:[1,1],basePrice:160,desc:'生命+30'},
+  {id:'acc3',  name:'GOLD PENDANT',   icon:'🏅',type:'acc',  tier:3,maxHp:50,xpBonus:0.2,color:'#f59e0b',size:[1,1],basePrice:280,desc:'生命+50·经验+20%'},
+  {id:'acc4',  name:'SOUL CRYSTAL',   icon:'💎',type:'acc',  tier:4,maxHp:80,xpBonus:0.4,color:'#22d3ee',size:[1,1],basePrice:500,desc:'生命+80·经验+40%'},
+];
+
+// ═══════════════════════════════════════════════════════════
+// SPIRIT CRYSTAL (灵晶) DATA — ammo
+// ═══════════════════════════════════════════════════════════
+// 4 elements × 4 tiers = 16 types
+// dmgMult: damage multiplier when loaded in matching wand
+const ELEMENTS=['fire','ice','thunder','void'];
 const ELEM_ICONS={'fire':'🔴','ice':'🔵','thunder':'🟡','void':'🟣'};
 const ELEM_COLORS={'fire':'#f97316','ice':'#67e8f9','thunder':'#fbbf24','void':'#a855f7'};
-let WAND_ELEM={};
-let ALL_ITEMS=[];
-
+// Wand → element mapping
+const WAND_ELEM={
+  ember:'fire', frost:'ice', thunder:'thunder', void:'void',
+  nature:'void', ancient:'fire', poison:'void', blood:'fire'
+};
+const CRYSTAL_TIERS=[
+  {tier:1,name:'粗糙灵晶',dmgMult:1.0,color:'#5a5a6a',basePrice:15},
+  {tier:2,name:'精制灵晶',dmgMult:1.4,color:'#6366f1',basePrice:35},
+  {tier:3,name:'纯化灵晶',dmgMult:2.0,color:'#a855f7',basePrice:70},
+  {tier:4,name:'至纯灵晶',dmgMult:3.5,color:'#fbbf24',basePrice:150},
+];
+const CRYSTALS=[];
+ELEMENTS.forEach(elem=>{
+  CRYSTAL_TIERS.forEach(t=>{
+    CRYSTALS.push({
+      id:`crystal_${elem}_${t.tier}`,
+      name:`${t.name}·${elem==='fire'?'炎':elem==='ice'?'冰':elem==='thunder'?'雷':'虚空'}`,
+      icon:ELEM_ICONS[elem],
+      type:'crystal',
+      elem, tier:t.tier,
+      dmgMult:t.dmgMult,
+      color:ELEM_COLORS[elem],
+      size:[1,1],
+      stackMax:99,
+      basePrice:t.basePrice,
+      desc:`伤害×${t.dmgMult}`,
+    });
+  });
+});
 function getCrystal(elem,tier){return CRYSTALS.find(c=>c.elem===elem&&c.tier===tier);}
+
+const ALL_ITEMS=[...WANDS,...ARMORS,...CRYSTALS];
 
 // Market prices fluctuate each visit
 let marketPrices={};
 function refreshMarket(){
-  const marketItems=ALL_ITEMS.filter(w=>w.type!=='crystal'||w.tier<=2);
+  // Market: wands + armors + boots + acc + tier1-2 crystals only
+  const marketItems=ALL_ITEMS.filter(w=>
+    w.type!=='crystal' || w.tier<=2
+  );
   marketItems.forEach(w=>{
-    const factor=0.8+Math.random()*(CONFIG.MARKET_PRICE_VARIANCE||0.4);
-    marketPrices[w.id]=Math.round(w.basePrice*factor);
+    const base=w.basePrice;
+    const factor=0.8+Math.random()*0.4;
+    marketPrices[w.id]=Math.round(base*factor);
   });
 }
 
 // ═══════════════════════════════════════════════════════════
-// GAMEDATA LOADER
-// ═══════════════════════════════════════════════════════════
-function applyGameData(gd){
-  // CONFIG
-  if(gd.config) Object.assign(CONFIG, gd.config);
-
-  // WANDS
-  WANDS = gd.wands || [];
-
-  // ARMORS（包含 boots 和 acc）
-  ARMORS = gd.armors || [];
-
-  // CRYSTALS
-  CRYSTALS = gd.crystals || [];
-
-  // ENEMY_TYPES：把 JSON 的掉落字段转成游戏内格式
-  ENEMY_TYPES = (gd.enemies || []).map(e=>({
-    id:            e.id,
-    name:          e.name,
-    hp:            e.hp,
-    spd:           e.spd,
-    dmg:           e.dmg,
-    color:         e.color,
-    r:             e.r,
-    xp:            e.xp,
-    aggroRange:    e.aggroRange || 200,
-    attackRate:    e.attackRate || 1.0,
-    ranged:        !!e.ranged,
-    range:         e.range || 60,
-    elev:          0,
-    // 掉落配置
-    _dropWandIds:      e.drop_wand_ids || [],
-    _dropArmorIds:     e.drop_armor_ids || [],
-    _dropCrystalTiers: e.drop_crystal_tiers || [1,2],
-    _dropWandChance:   e.drop_wand_chance ?? 0.25,
-    _dropArmorChance:  e.drop_armor_chance ?? 0.20,
-    _dropCrystalMin:   e.drop_crystal_min ?? 2,
-  }));
-
-  // WAND_ELEM
-  WAND_ELEM = gd.wand_elem_map || {};
-
-  // ALL_ITEMS 合并
-  ALL_ITEMS = [...WANDS, ...ARMORS, ...CRYSTALS];
-
-  console.log(`[gamedata] wands:${WANDS.length} armors:${ARMORS.length} crystals:${CRYSTALS.length} enemies:${ENEMY_TYPES.length}`);
-}
-
-async function loadGameData(){
-  const loadScreen = document.getElementById('load-screen');
-  const loadMsg    = document.getElementById('load-msg');
-  if(loadMsg) loadMsg.textContent = '加载游戏数据…';
-  try {
-    const res = await fetch('gamedata.json');
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const gd = await res.json();
-    applyGameData(gd);
-    if(loadMsg) loadMsg.textContent = '初始化场景…';
-  } catch(err){
-    console.warn('[gamedata] 加载失败，使用内置默认数据:', err.message);
-    applyGameData(BUILTIN_GAMEDATA);
-    if(loadMsg) loadMsg.textContent = '使用内置数据（离线模式）…';
-  }
-  // 短暂停留后隐藏 loading 界面
-  setTimeout(()=>{
-    if(loadScreen) loadScreen.style.display='none';
-    initGame();
-  }, 400);
-}
-
-// ── 内置兜底数据（gamedata.json 不可用时使用）──
-const BUILTIN_GAMEDATA = {
-  config: {ENEMY_INITIAL:14,ENEMY_MAX:8,ENEMY_RESPAWN:2,PLAYER_HP:100,PLAYER_SPD:2.9,PLAYER_START_GOLD:1000,PICKUP_RANGE:46,CHEST_B_COUNT:10,CHEST_A_COUNT:8,CHEST_S_COUNT:5,MARKET_PRICE_VARIANCE:0.4},
-  wands:[
-    {id:'ember',   name:'EMBER WAND',  icon:'🔥',dmg:[12,18],range:160,spd:1.5,color:'#f97316',proj:'#fb923c',desc:'火焰·中距',   size:[1,3],basePrice:120,aoe:0},
-    {id:'frost',   name:'FROST STAFF', icon:'❄️', dmg:[8,14], range:240,spd:0.9,color:'#67e8f9',proj:'#a5f3fc',desc:'冰霜·远距·减速',size:[1,3],basePrice:150,slow:true,aoe:0},
-    {id:'thunder', name:'THUNDER ROD', icon:'⚡', dmg:[22,34],range:130,spd:0.55,color:'#fbbf24',proj:'#fde68a',desc:'雷击·高伤',  size:[1,3],basePrice:200,aoe:0},
-    {id:'void',    name:'VOID SCEPTER',icon:'🌀',dmg:[15,22],range:190,spd:1.1,color:'#a855f7',proj:'#c084fc',desc:'虚空·AOE穿透',size:[1,3],basePrice:180,aoe:32,pierce:true},
-    {id:'nature',  name:'NATURE WAND', icon:'🌿',dmg:[10,16],range:200,spd:1.3,color:'#4ade80',proj:'#86efac',desc:'自然·吸血',  size:[1,3],basePrice:160,vamp:true,aoe:0},
-    {id:'ancient', name:'ANCIENT TOME',icon:'📜',dmg:[28,44],range:260,spd:0.45,color:'#fcd34d',proj:'#fef08a',desc:'远古·超高伤',size:[1,3],basePrice:300,aoe:0},
-    {id:'poison',  name:'POISON ORB',  icon:'💀',dmg:[6,10], range:170,spd:1.6,color:'#84cc16',proj:'#bef264',desc:'毒·持续伤害', size:[1,2],basePrice:100,dot:true,aoe:0},
-    {id:'blood',   name:'BLOOD LANCE', icon:'🩸',dmg:[18,28],range:150,spd:0.8,color:'#dc2626',proj:'#f87171',desc:'血矛·高穿透', size:[1,3],basePrice:220,pierce:true,aoe:0},
-  ],
-  armors:[
-    {id:'robe1',name:'TATTERED ROBE',  icon:'👘',type:'armor',tier:1,def:3, color:'#78716c',size:[1,2],basePrice:60, desc:'防御+3'},
-    {id:'robe2',name:'WOVEN MANTLE',   icon:'🥻',type:'armor',tier:2,def:7, color:'#a16207',size:[1,2],basePrice:130,desc:'防御+7'},
-    {id:'robe3',name:'ARCANE VESTMENT',icon:'🩱',type:'armor',tier:3,def:13,color:'#6366f1',size:[1,2],basePrice:240,desc:'防御+13'},
-    {id:'robe4',name:'VOID SHROUD',    icon:'🦺',type:'armor',tier:4,def:22,color:'#a855f7',size:[1,2],basePrice:400,desc:'防御+22'},
-    {id:'boot1',name:'WORN SANDALS',   icon:'👡',type:'boots',tier:1,spd:0.3,color:'#78716c',size:[1,2],basePrice:50, desc:'速度+0.3'},
-    {id:'boot2',name:'LEATHER BOOTS',  icon:'👢',type:'boots',tier:2,spd:0.6,color:'#92400e',size:[1,2],basePrice:110,desc:'速度+0.6'},
-    {id:'boot3',name:'SWIFT TREADS',   icon:'🥾',type:'boots',tier:3,spd:1.0,color:'#0891b2',size:[1,2],basePrice:200,desc:'速度+1.0'},
-    {id:'boot4',name:'PHANTOM STEPS',  icon:'👟',type:'boots',tier:4,spd:1.6,color:'#7c3aed',size:[1,2],basePrice:350,desc:'速度+1.6'},
-    {id:'acc1', name:'COPPER RING',    icon:'💍',type:'acc',  tier:1,maxHp:15,color:'#78716c',size:[1,1],basePrice:80, desc:'生命+15'},
-    {id:'acc2', name:'SILVER AMULET',  icon:'📿',type:'acc',  tier:2,maxHp:30,color:'#94a3b8',size:[1,1],basePrice:160,desc:'生命+30'},
-    {id:'acc3', name:'GOLD PENDANT',   icon:'🏅',type:'acc',  tier:3,maxHp:50,xpBonus:0.2,color:'#f59e0b',size:[1,1],basePrice:280,desc:'生命+50·经验+20%'},
-    {id:'acc4', name:'SOUL CRYSTAL',   icon:'💎',type:'acc',  tier:4,maxHp:80,xpBonus:0.4,color:'#22d3ee',size:[1,1],basePrice:500,desc:'生命+80·经验+40%'},
-  ],
-  crystals: (()=>{
-    const elems=['fire','ice','thunder','void'];
-    const tiers=[{t:1,n:'粗糙灵晶',m:1.0,p:15},{t:2,n:'精制灵晶',m:1.4,p:35},{t:3,n:'纯化灵晶',m:2.0,p:70},{t:4,n:'至纯灵晶',m:3.5,p:150}];
-    const icons={'fire':'🔴','ice':'🔵','thunder':'🟡','void':'🟣'};
-    const colors={'fire':'#f97316','ice':'#67e8f9','thunder':'#fbbf24','void':'#a855f7'};
-    const cn={'fire':'炎','ice':'冰','thunder':'雷','void':'虚空'};
-    const out=[];
-    elems.forEach(el=>tiers.forEach(ti=>out.push({
-      id:`crystal_${el}_${ti.t}`,name:`${ti.n}·${cn[el]}`,icon:icons[el],
-      type:'crystal',elem:el,tier:ti.t,dmgMult:ti.m,color:colors[el],
-      size:[1,1],stackMax:99,basePrice:ti.p,desc:`伤害×${ti.m}`,
-    })));
-    return out;
-  })(),
-  enemies:[
-    {id:'shade',  name:'SHADE',  hp:65, spd:1.3, dmg:9, color:'#6366f1',r:12,xp:20, aggroRange:200,attackRate:1.1,ranged:false,range:60, drop_wand_ids:[],drop_armor_ids:[],drop_crystal_tiers:[1,2],  drop_wand_chance:0.20,drop_armor_chance:0.15,drop_crystal_min:2},
-    {id:'wraith', name:'WRAITH', hp:130,spd:0.9, dmg:15,color:'#a855f7',r:16,xp:40, aggroRange:220,attackRate:1.0,ranged:false,range:60, drop_wand_ids:[],drop_armor_ids:[],drop_crystal_tiers:[1,2,3],drop_wand_chance:0.25,drop_armor_chance:0.20,drop_crystal_min:2},
-    {id:'golem',  name:'GOLEM',  hp:320,spd:0.45,dmg:28,color:'#78716c',r:22,xp:100,aggroRange:180,attackRate:0.7,ranged:false,range:60, drop_wand_ids:[],drop_armor_ids:['robe3','robe4'],drop_crystal_tiers:[2,3],drop_wand_chance:0.30,drop_armor_chance:0.40,drop_crystal_min:3},
-    {id:'specter',name:'SPECTER',hp:50, spd:2.3, dmg:6, color:'#22d3ee',r:9, xp:15, aggroRange:240,attackRate:1.3,ranged:false,range:60, drop_wand_ids:[],drop_armor_ids:[],drop_crystal_tiers:[1],    drop_wand_chance:0.10,drop_armor_chance:0.10,drop_crystal_min:1},
-    {id:'cultist',name:'CULTIST',hp:95, spd:1.0, dmg:19,color:'#dc2626',r:14,xp:35, aggroRange:210,attackRate:1.0,ranged:false,range:60, drop_wand_ids:['poison'],drop_armor_ids:['robe2'],drop_crystal_tiers:[1,2],drop_wand_chance:0.35,drop_armor_chance:0.25,drop_crystal_min:2},
-    {id:'archer', name:'ARCHER', hp:70, spd:0.8, dmg:14,color:'#f59e0b',r:11,xp:30, aggroRange:300,attackRate:0.9,ranged:true, range:200,drop_wand_ids:['frost'],drop_armor_ids:['boot2'],drop_crystal_tiers:[1,2],drop_wand_chance:0.40,drop_armor_chance:0.20,drop_crystal_min:2},
-  ],
-  wand_elem_map:{ember:'fire',frost:'ice',thunder:'thunder',void:'void',nature:'void',ancient:'fire',poison:'void',blood:'fire'},
-};
-
-// ═══════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════
-let gold=0; // set from CONFIG in initGame
+let gold=200;
 let stash=[];            // all items in homebase stash
 // New loadout structure
 let equipSlots={weapon:null,armor:null,boots:null,acc:null}; // equipped items
@@ -903,7 +728,7 @@ let frames=0,lastTime=0;
 let tileMap=[],elevMap=[];
 let enemies=[],chests=[],droppedWands=[],projectiles=[],particles=[];
 let player={};
-let cam={x:0, y:0}; // 视口左上角世界坐标
+let cam={x:0,y:0};
 let pickupTarget=null,pickupProgress=0,pickupHolding=false;
 let selectedInvIdx=null;
 // Touch
@@ -931,69 +756,66 @@ function fbm(x,y,seed,oct=4){
   return v/max;
 }
 
-let heightMap=[];  // elevation smoothed 0..1 per tile (for rendering ramps)
-
-// ── CITY MAP LAYOUT ──
-// Tile types stored in tileMap: 0=floor, 1=solid wall/building
-// elevMap: 0=ground, 1=raised platform, 2=rooftop
-// slopeMap: direction of ramp if tile is a transition  (null or 'n','s','e','w')
-let slopeMap=[];
-
-function fillRect(r0,c0,r1,c1,wall,elv){
-  for(let r=r0;r<r1;r++)for(let c=c0;c<c1;c++){
-    if(r<0||r>=ROWS||c<0||c>=COLS)continue;
-    tileMap[r][c]=wall;
-    elevMap[r][c]=elv;
-  }
-}
+let heightMap=[];  // continuous 0..1 height per tile
+let wallMask=[];   // 1=solid wall
 
 function genMap(){
-  tileMap=[];elevMap=[];heightMap=[];slopeMap=[];
+  const seed=Math.floor(Math.random()*9999);
+  tileMap=[];elevMap=[];heightMap=[];wallMask=[];
 
+  // Generate continuous height field
   for(let r=0;r<ROWS;r++){
-    tileMap[r]=[];elevMap[r]=[];heightMap[r]=[];slopeMap[r]=[];
+    heightMap[r]=[];wallMask[r]=[];
     for(let c=0;c<COLS;c++){
-      tileMap[r][c]=0; elevMap[r][c]=0; heightMap[r][c]=0; slopeMap[r][c]=null;
+      const hv=fbm(c/12,r/12,seed);
+      heightMap[r][c]=hv;
+      // Walls from separate high-freq noise
+      const wn=fbm(c/4,r/4,seed+500,3);
+      wallMask[r][c]=(wn>0.72&&r>1&&r<ROWS-2&&c>1&&c<COLS-2)?1:0;
     }
   }
 
-  // 边界墙
-  for(let r=0;r<ROWS;r++){ tileMap[r][0]=1; tileMap[r][COLS-1]=1; }
-  for(let c=0;c<COLS;c++){ tileMap[0][c]=1; tileMap[ROWS-1][c]=1; }
+  // Derive tileMap and elevMap from height
+  for(let r=0;r<ROWS;r++){
+    tileMap[r]=[];elevMap[r]=[];
+    for(let c=0;c<COLS;c++){
+      if(r===0||r===ROWS-1||c===0||c===COLS-1){tileMap[r][c]=1;elevMap[r][c]=0;continue;}
+      tileMap[r][c]=wallMask[r][c];
+      const h=heightMap[r][c];
+      elevMap[r][c]=tileMap[r][c]?0:h>0.72?2:h>0.52?1:0;
+    }
+  }
+  // Clear spawn area
+  for(let r=1;r<9;r++)for(let c=1;c<14;c++){tileMap[r][c]=0;elevMap[r][c]=0;heightMap[r][c]=0.3;}
+  // Clear extract area
+  for(let r=ROWS-9;r<ROWS-1;r++)for(let c=COLS-9;c<COLS-1;c++){tileMap[r][c]=0;elevMap[r][c]=0;heightMap[r][c]=0.3;}
 
-  // 完全平面，无平台无斜坡
-  // elevMap/heightMap/slopeMap 全部保持0/null
-
+  // Generate scatter props (rocks, pillars, runes, bones)
   genScatter();
 }
 
-
 let scatterProps=[];
 const PROP_TYPES=[
-  {type:'crate',  icons:['📦'],colors:['#c8a878','#b89868'],r:7},
-  {type:'barrel', icons:['🛢'],colors:['#6a8090','#5a7080'],r:6},
-  {type:'bench',  icons:['🪑'],colors:['#a08060','#907050'],r:5},
-  {type:'light',  icons:['💡'],colors:['#fbbf24'],r:4,glow:true,light:true},
-  {type:'cone',   icons:['🔺'],colors:['#f97316'],r:5},
-  {type:'car',    icons:['🚗','🚙'],colors:['#6080a0','#a06040'],r:10},
+  {type:'rock',   icons:['⬟','⬡'],colors:['#3a3a4a','#2e2e3e','#44445a'],r:8},
+  {type:'pillar', icons:['▮','▯'],colors:['#4a3a2a','#3a2e1e','#5a4a30'],r:6},
+  {type:'rune',   icons:['✦','✧','❋'],colors:['#6366f188','#a855f788','#4ade8044'],r:5,glow:true},
+  {type:'bones',  icons:['✕','×'],colors:['#4a4040','#3a3030'],r:4},
+  {type:'torch',  icons:['𝄬'],colors:['#f97316'],r:4,glow:true,light:true},
 ];
 function genScatter(){
   scatterProps=[];
-  const count=80;
+  const count=180;
   for(let i=0;i<count;i++){
-    const wx=80+Math.random()*(MAP_W-160);
-    const wy=80+Math.random()*(MAP_H-160);
+    const wx=60+Math.random()*(MAP_W-120);
+    const wy=60+Math.random()*(MAP_H-120);
     if(isSolid(wx,wy))continue;
-    if(dist(wx,wy,160,160)<100)continue;
-    if(dist(wx,wy,MAP_W-160,MAP_H-160)<120)continue;
-    const elv=getElev(wx,wy);
-    // Only put cars on ground level roads
-    const availTypes=elv===0?PROP_TYPES:PROP_TYPES.filter(p=>p.type!=='car');
-    const pt=availTypes[Math.floor(Math.random()*availTypes.length)];
+    if(dist(wx,wy,160,160)<120)continue; // not in spawn
+    const pt=PROP_TYPES[Math.floor(Math.random()*PROP_TYPES.length)];
     const icon=pt.icons[Math.floor(Math.random()*pt.icons.length)];
     const color=pt.colors[Math.floor(Math.random()*pt.colors.length)];
+    const elv=getElev(wx,wy);
     scatterProps.push({wx,wy,type:pt.type,icon,color,r:pt.r,glow:!!pt.glow,light:!!pt.light,elv,
-      phase:Math.random()*Math.PI*2, scale:0.8+Math.random()*0.4});
+      phase:Math.random()*Math.PI*2, scale:0.7+Math.random()*0.6});
   }
 }
 
@@ -1025,43 +847,45 @@ function canAttack(attackerElev,targetElev){
 }
 
 // ═══════════════════════════════════════════════════════════
-// ENEMY DROP ROLLS — 使用 gamedata.json 的掉落配置
+// ENEMY TYPES
 // ═══════════════════════════════════════════════════════════
-function rollEnemyDrops(enemyType){
-  const t = enemyType || {};
-  const drops = [];
-  const allowedTiers = t._dropCrystalTiers && t._dropCrystalTiers.length ? t._dropCrystalTiers : [1,2];
-  const minCrystals  = t._dropCrystalMin   || 2;
-  const numDrops = minCrystals + Math.floor(Math.random()*2);
+const ENEMY_TYPES=[
+  {name:'SHADE',  hp:65,  spd:1.3,dmg:9,  color:'#6366f1',r:12,xp:20,elev:0},
+  {name:'WRAITH', hp:130, spd:0.9,dmg:15, color:'#a855f7',r:16,xp:40,elev:1},
+  {name:'GOLEM',  hp:320, spd:0.45,dmg:28,color:'#78716c',r:22,xp:100,elev:0},
+  {name:'SPECTER',hp:50,  spd:2.3,dmg:6,  color:'#22d3ee',r:9, xp:15,elev:0},
+  {name:'CULTIST',hp:95,  spd:1.0,dmg:19, color:'#dc2626',r:14,xp:35,elev:1},
+  {name:'ARCHER', hp:70,  spd:0.8,dmg:14, color:'#f59e0b',r:11,xp:30,elev:2,ranged:true,range:200},
+];
 
-  for(let i=0;i<numDrops;i++){
-    const elem = ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
-    const tier = allowedTiers[Math.floor(Math.random()*allowedTiers.length)];
-    const crystal = getCrystal(elem, tier);
+
+// Roll enemy loot table at spawn time
+// Each enemy drops: 1 random crystal stack + 20% chance weapon/armor
+function rollEnemyDrops(){
+  const drops=[];
+  // Always drop 2-3 crystal stacks
+  const numCrystalDrops=2+Math.floor(Math.random()*2);
+  for(let i=0;i<numCrystalDrops;i++){
+    const elem=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
+    // Higher tier crystals rarer: 60% t1, 25% t2, 12% t3, 3% t4
+    const r=Math.random();
+    const tier=r<0.6?1:r<0.85?2:r<0.97?3:4;
+    const crystal=getCrystal(elem,tier);
     if(crystal){
-      const qty = 3+Math.floor(Math.random()*8);
+      const qty=3+Math.floor(Math.random()*8);
       drops.push(Object.assign({},crystal,{qty}));
     }
   }
-
-  // 掉落武器
-  const wandChance = t._dropWandChance != null ? t._dropWandChance : 0.25;
-  if(Math.random() < wandChance){
-    const pool = t._dropWandIds && t._dropWandIds.length
-      ? t._dropWandIds.map(id=>WANDS.find(w=>w.id===id)).filter(Boolean)
-      : WANDS;
-    if(pool.length > 0)
-      drops.push(Object.assign({}, pool[Math.floor(Math.random()*pool.length)]));
+  // 25% chance: drop a weapon
+  if(Math.random()<0.25){
+    const w=WANDS[Math.floor(Math.random()*WANDS.length)];
+    drops.push(Object.assign({},w));
   }
-
-  // 掉落防具
-  const armorChance = t._dropArmorChance != null ? t._dropArmorChance : 0.20;
-  if(Math.random() < armorChance){
-    const pool = t._dropArmorIds && t._dropArmorIds.length
-      ? t._dropArmorIds.map(id=>ARMORS.find(a=>a.id===id)).filter(Boolean)
-      : ARMORS;
-    if(pool.length > 0)
-      drops.push(Object.assign({}, pool[Math.floor(Math.random()*pool.length)]));
+  // 20% chance: drop armor/boots/acc
+  if(Math.random()<0.20){
+    const pool=[...ARMORS];
+    const a=pool[Math.floor(Math.random()*pool.length)];
+    drops.push(Object.assign({},a));
   }
   return drops;
 }
@@ -1075,7 +899,7 @@ function spawnEnemies(){
     const t=ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
     const spawnElev=t.elev||getElev(wx,wy);
     // Pre-roll enemy drops at spawn
-    const drops=rollEnemyDrops(t);
+    const drops=rollEnemyDrops();
     enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
       elev:spawnElev,attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
       drops,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,
@@ -1086,80 +910,19 @@ function spawnEnemies(){
 // ═══════════════════════════════════════════════════════════
 // CHESTS
 // ═══════════════════════════════════════════════════════════
-// 箱子分级配置
-const CHEST_GRADES = [
-  { grade:'S', count:5,  color:0xffd700, emissive:0x442200, scale:0.55,
-    loot:()=>{ // S级：高阶法杖/防具+大量高级灵晶
-      const items=[];
-      const w=WANDS[Math.floor(Math.random()*WANDS.length)];
-      items.push(Object.assign({},w));
-      const a=ARMORS[Math.floor(Math.random()*ARMORS.length)];
-      items.push(Object.assign({},a));
-      // 2~3组高阶灵晶
-      for(let n=0;n<2+Math.floor(Math.random()*2);n++){
-        const elem=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
-        const tier=Math.random()<0.5?4:3;
-        const c=getCrystal(elem,tier);
-        if(c) items.push(Object.assign({},c,{qty:10+Math.floor(Math.random()*20)}));
-      }
-      return items;
-    }
-  },
-  { grade:'A', count:8,  color:0x818cf8, emissive:0x110033, scale:0.45,
-    loot:()=>{
-      const items=[];
-      if(Math.random()<0.5){
-        const w=WANDS[Math.floor(Math.random()*WANDS.length)];
-        items.push(Object.assign({},w));
-      } else {
-        const a=ARMORS[Math.floor(Math.random()*ARMORS.length)];
-        items.push(Object.assign({},a));
-      }
-      for(let n=0;n<2;n++){
-        const elem=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
-        const tier=Math.random()<0.6?2:3;
-        const c=getCrystal(elem,tier);
-        if(c) items.push(Object.assign({},c,{qty:8+Math.floor(Math.random()*12)}));
-      }
-      return items;
-    }
-  },
-  { grade:'B', count:10, color:0x94a3b8, emissive:0x080808, scale:0.36,
-    loot:()=>{
-      const items=[];
-      const pool=Math.random()<0.4?ARMORS:WANDS;
-      if(Math.random()<0.35) items.push(Object.assign({},pool[Math.floor(Math.random()*pool.length)]));
-      const elem=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
-      const tier=Math.random()<0.7?1:2;
-      const c=getCrystal(elem,tier);
-      if(c) items.push(Object.assign({},c,{qty:5+Math.floor(Math.random()*10)}));
-      return items;
-    }
-  },
-];
-
 function spawnChests(){
   chests=[];
-  for(const gradeConf of CHEST_GRADES){
-    for(let i=0;i<gradeConf.count;i++){
-      let wx,wy,tries=0;
-      do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
-      while(isSolid(wx,wy)&&tries<50);
-      const lootItems=gradeConf.loot();
-      const mainItem=lootItems[0];
-      const extraLoot=lootItems.slice(1);
-      chests.push({
-        wx,wy,
-        wand:mainItem,
-        extraLoot,
-        opened:false,
-        gp:Math.random()*Math.PI*2,
-        grade:gradeConf.grade,
-        gradeColor:gradeConf.color,
-        gradeScale:gradeConf.scale,
-        gradeEmissive:gradeConf.emissive,
-      });
-    }
+  for(let i=0;i<CONFIG.CHEST_COUNT;i++){
+    let wx,wy,tries=0;
+    do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
+    while(isSolid(wx,wy)&&tries<50);
+    // Chests: 40% armor, 30% crystals, 30% wands
+    const rr=Math.random();
+    const pool=rr<0.3?ARMORS:rr<0.6?CRYSTALS:WANDS;
+    const wand=pool[Math.floor(Math.random()*pool.length)];
+    const chestItem=Object.assign({},wand);
+    if(chestItem.type==='crystal') chestItem.qty=5+Math.floor(Math.random()*15);
+    chests.push({wx,wy,wand:chestItem,opened:false,gp:Math.random()*Math.PI*2});
   }
 }
 
@@ -1167,7 +930,6 @@ function spawnChests(){
 // PLAYER
 // ═══════════════════════════════════════════════════════════
 const INV_COLS=6,INV_ROWS=4;
-const CELL=30,GAP=2;  // 背包格子尺寸
 
 function initPlayer(){
   player={
@@ -1176,7 +938,10 @@ function initPlayer(){
     baseSpd:2.9,spd:2.9,r:12,
     baseDef:0,def:0,
     inventory:[],
-    equippedWeapon:null,  // 当前装备的武器（不在背包里）
+    equippedIdx:null,
+    armorSlot:null,   // equipped armor item ref
+    bootsSlot:null,   // equipped boots item ref
+    accSlot:null,     // equipped accessory item ref
     xp:0,xpNext:100,level:1,
     attackCd:0,
     elev:0,prevElev:0,
@@ -1185,9 +950,10 @@ function initPlayer(){
     elevAnimDir:0,    // +1 up, -1 down
     visualElevOffset:0, // current visual Y offset (animated)
   };
-  // 武器直接装备到 equippedWeapon（不放背包）
+  // Load weapon into inventory and auto-equip
   if(equipSlots.weapon){
-    player.equippedWeapon=Object.assign({},equipSlots.weapon);
+    placeItemInGrid(equipSlots.weapon);
+    player.equippedIdx=0; // weapon is always placed first
   }
   // Load bag items
   bagLoadout.forEach(it=>{ if(it) placeItemInGrid(it); });
@@ -1251,10 +1017,17 @@ function canPlace(gx,gy,sw,sh,excludeIdx=null){
 }
 
 function getEquipped(){
-  return player.equippedWeapon || null;
+  if(player.equippedIdx===null||player.equippedIdx>=player.inventory.length)return null;
+  const entry=player.inventory[player.equippedIdx];
+  if(!entry)return null;
+  // Return wand-like object (item may be wand or have .item)
+  return entry.item||entry.wand||null;
 }
 
-
+// ═══════════════════════════════════════════════════════════
+// INVENTORY GRID UI
+// ═══════════════════════════════════════════════════════════
+const CELL=30,GAP=2;
 function updateInvGrid(){
   const grid=document.getElementById('inv-grid');
   grid.innerHTML='';
@@ -1314,53 +1087,24 @@ function equipSelected(){
   const entry=player.inventory[selectedInvIdx];
   const it=entry.item||entry.wand;
   if(!it)return;
-
   if(!it.type){
-    // 武器：移出背包，放到 player.equippedWeapon
-    const old=player.equippedWeapon;
-    player.equippedWeapon=Object.assign({},it);
-    player.inventory.splice(selectedInvIdx,1);
-    // 如果有旧武器，放回背包
-    if(old) placeItemInGrid(old);
-    addLog(`装备武器: ${it.name}`,'info');
-  } else if(it.type==='armor'){
-    const old=player.equippedArmor;
-    player.equippedArmor=Object.assign({},it);
-    player.inventory.splice(selectedInvIdx,1);
-    if(old) placeItemInGrid(old);
-    addLog(`装备防具: ${it.name}`,'info');
+    // It's a wand
+    player.equippedIdx=selectedInvIdx;
+    addLog(`装备法杖: ${it.name}`,'info');
+  } else {
+    // Armor/boots/acc — toggle equipped on this entry
+    // Unequip same type first
+    player.inventory.forEach((e,i)=>{
+      if(i!==selectedInvIdx&&e.item&&e.item.type===it.type) e.equipped=false;
+    });
+    entry.equipped=!entry.equipped;
+    addLog((entry.equipped?'装备':'卸下')+`: ${it.name}`,'info');
     recalcStats();
-  } else if(it.type==='boots'){
-    const old=player.equippedBoots;
-    player.equippedBoots=Object.assign({},it);
-    player.inventory.splice(selectedInvIdx,1);
-    if(old) placeItemInGrid(old);
-    addLog(`装备鞋子: ${it.name}`,'info');
-    recalcStats();
-  } else if(it.type==='acc'){
-    const old=player.equippedAcc;
-    player.equippedAcc=Object.assign({},it);
-    player.inventory.splice(selectedInvIdx,1);
-    if(old) placeItemInGrid(old);
-    addLog(`装备饰品: ${it.name}`,'info');
-    recalcStats();
-  } else if(it.type==='crystal'){
-    // 弹药：加入弹药池
-    const existing=player.ammoPool.find(a=>a.crystal.id===it.id);
-    if(existing){ existing.qty+=it.qty||1; }
-    else { player.ammoPool.push({crystal:Object.assign({},it),qty:it.qty||1}); }
-    player.inventory.splice(selectedInvIdx,1);
-    addLog(`装填弹药: ${it.name} ×${it.qty||1}`,'info');
-    updateAmmoHud();
   }
-
-  selectedInvIdx=null;
   updateInvGrid();
-  renderRaidEquipSlots();
 }
 
 
-function sellFromBackpack(){ }
 function sellFromInventory(){
   if(selectedInvIdx===null)return;
   const entry=player.inventory[selectedInvIdx];
@@ -1444,117 +1188,27 @@ function updatePickup(dt){
   }
 }
 
-// 当前打开的战利品源（chest 或 droppedWand）
-let lootSource = null;
-let lootItems  = [];   // [{item, qty}] 战利品面板内容
-let selectedLoot = null;  // 选中的战利品索引
-
 function finishPickup(){
   if(!pickupTarget)return;
-  // 打开战利品面板而不是直接放入背包
-  openLootPanel(pickupTarget);
+  const wand=pickupTarget.wand;
+  const placed=placeItemInGrid(wand);
+  if(!placed){
+    addLog('背包已满!','dmg');
+    pickupTarget=null;pickupProgress=0;
+    document.getElementById('pickup-bar-wrap').style.display='none';
+    return;
+  }
+  // Remove from world
+  const ci=chests.findIndex(c=>c===pickupTarget);
+  if(ci>=0){chests[ci].opened=true;}
+  else{const di=droppedWands.findIndex(d=>d===pickupTarget);if(di>=0)droppedWands.splice(di,1);}
+  addLog(`拾取: ${wand.name}`,'loot');
+  spawnParticles(pickupTarget.wx,pickupTarget.wy,wand.color,12,3);
+  pickupTarget=null;pickupProgress=0;
   document.getElementById('pickup-bar-wrap').style.display='none';
-  pickupProgress=0; pickupHolding=false;
-  pickupTarget=null;
-}
-
-function openLootPanel(source){
-  lootSource = source;
-  lootItems  = [];
-  // 收集战利品
-  const wand = source.wand;
-  if(wand){
-    // 箱子/掉落物的主物品
-    lootItems.push({item: wand, qty: wand.qty||1});
-  }
-  // 如果是箱子，还有额外掉落
-  if(source.extraLoot){
-    source.extraLoot.forEach(it => lootItems.push({item:it, qty:it.qty||1}));
-  }
-  selectedLoot = null;
-  renderLootPanel();
-  showLootPanel();
-  const srcName = wand ? wand.name : 'UNKNOWN';
-  document.getElementById('loot-source-name').textContent = srcName;
-}
-
-function closeLootPanel(){
-  // 未拿走的物品变成地面掉落（留在原位）
-  if(lootSource && lootItems.length > 0){
-    lootItems.forEach(({item})=>{
-      droppedWands.push({
-        wx: lootSource.wx + (Math.random()-0.5)*30,
-        wy: lootSource.wy + (Math.random()-0.5)*30,
-        wand: item
-      });
-    });
-    // 从原来容器中移除
-    const ci = chests.findIndex(c=>c===lootSource);
-    if(ci>=0){ chests[ci].opened=true; }
-    else {
-      const di = droppedWands.findIndex(d=>d===lootSource);
-      if(di>=0) droppedWands.splice(di,1);
-    }
-  }
-  lootSource=null; lootItems=[];
-  hideLootPanel();
-}
-
-function renderLootPanel(){
-  const grid = document.getElementById('loot-grid');
-  grid.innerHTML='';
-  lootItems.forEach((entry, i)=>{
-    const {item, qty} = entry;
-    const cell = document.createElement('div');
-    cell.className = 'loot-cell' + (selectedLoot===i?' selected':'');
-    cell.innerHTML = `<span>${item.icon||'📦'}</span><span class="lc-name">${item.name}</span>${qty>1?`<span class="lc-qty">×${qty}</span>`:''}`;
-    cell.onclick = ()=>{ selectedLoot=i; renderLootPanel(); document.getElementById('btn-loot-take').disabled=false; };
-    grid.appendChild(cell);
-  });
-  if(lootItems.length===0){
-    grid.innerHTML='<div style="color:#4a4a60;font-size:8px;padding:10px;grid-column:1/-1">EMPTY</div>';
-  }
-}
-
-function lootSelected(){
-  if(selectedLoot===null || selectedLoot>=lootItems.length) return;
-  const {item, qty} = lootItems[selectedLoot];
-  const placed = placeItemInGrid(Object.assign({},item,{qty}));
-  if(!placed){ addLog('背包已满','imp'); return; }
-  lootItems.splice(selectedLoot,1);
-  selectedLoot=null;
-  document.getElementById('btn-loot-take').disabled=true;
-  renderLootPanel();
+  recalcStats();
   updateInvGrid();
-  if(lootItems.length===0) closeLootPanelSilent();
 }
-
-function lootAll(){
-  const failed=[];
-  lootItems.forEach(({item,qty})=>{
-    if(!placeItemInGrid(Object.assign({},item,{qty}))) failed.push(item);
-  });
-  if(failed.length){ addLog('背包已满，部分未取','imp'); lootItems=failed.map(item=>({item,qty:item.qty||1})); }
-  else lootItems=[];
-  renderLootPanel();
-  updateInvGrid();
-  if(lootItems.length===0) closeLootPanelSilent();
-}
-
-function closeLootPanelSilent(){
-  // 静默关闭（物品已全取走）
-  if(lootSource){
-    const ci=chests.findIndex(c=>c===lootSource);
-    if(ci>=0) chests[ci].opened=true;
-    else{
-      const di=droppedWands.findIndex(d=>d===lootSource);
-      if(di>=0) droppedWands.splice(di,1);
-    }
-  }
-  lootSource=null; lootItems=[];
-  hideLootPanel();
-}
-
 
 function tryStartPickup(){
   // Find nearest lootable
@@ -1592,7 +1246,7 @@ function spawnParticles(wx,wy,color,count=8,speed=2){
 // COMBAT
 // ═══════════════════════════════════════════════════════════
 function playerShoot(dt){
-  const w=player.equippedWeapon||null;
+  const w=getEquipped();
   const rate=w?w.spd:1.2;
   player.attackCd-=dt;
   if(player.attackCd>0)return;
@@ -1601,34 +1255,20 @@ function playerShoot(dt){
 
   let closest=null,closestD=Infinity;
   for(const e of enemies){
-    if(!canAttack(pElev,e.elev))continue;
+    if(!canAttack(pElev,e.elev))continue; // can't hit higher ground
     const d=dist(player.wx,player.wy,e.wx,e.wy);
     if(d<range&&d<closestD){closestD=d;closest=e;}
   }
   if(!closest)return;
 
-  // 弹药倍率
-  let dmgMult=1;
-  if(w&&player.ammoPool&&player.ammoPool.length>0){
-    const elem=WAND_ELEM[w.id];
-    const match=player.ammoPool.find(a=>a.crystal.elem===elem&&a.qty>0);
-    if(match){dmgMult=match.crystal.dmgMult;match.qty--;if(match.qty<=0)player.ammoPool.splice(player.ammoPool.indexOf(match),1);updateAmmoHud();}
-    else{
-      // 无匹配弹药：用任意弹药但倍率减半
-      const any=player.ammoPool.find(a=>a.qty>0);
-      if(any){dmgMult=any.crystal.dmgMult*0.5;any.qty--;if(any.qty<=0)player.ammoPool.splice(player.ammoPool.indexOf(any),1);updateAmmoHud();}
-    }
-  }
-
   player.attackCd=1/rate;
   const [nx,ny]=normalize(closest.wx-player.wx,closest.wy-player.wy);
-  const baseDmg=(w?w.dmg[0]:5)+Math.random()*((w?w.dmg[1]:8)-(w?w.dmg[0]:5));
   projectiles.push({
     wx:player.wx,wy:player.wy,
-    vx:nx*12,vy:ny*12,        // 速度提高，弹道可见
-    dmg:baseDmg*dmgMult,
+    vx:nx*5,vy:ny*5,
+    dmg:(w?w.dmg[0]:5)+Math.random()*((w?w.dmg[1]:8)-(w?w.dmg[0]:5)),
     color:w?w.proj:'#e2e8f0',
-    life:2.5,r:w&&w.aoe>0?8:5,
+    life:1.6,r:w&&w.aoe>0?8:5,
     aoe:w?w.aoe:0,pierce:w?!!w.pierce:false,
     slow:w?!!w.slow:false,vamp:w?!!w.vamp:false,
     dot:w?!!w.dot:false,
@@ -1645,10 +1285,11 @@ function updateEnemies(dt){
 
     if(d<e.aggroRange){
       const [nx,ny]=normalize(player.wx-e.wx,player.wy-e.wy);
-      const spd=(e.slowTimer>0)?e.spd*0.3:e.spd*0.55;  // 大幅降速，减速状态更慢
+      const spd=(e.slowTimer>0)?e.spd*.4:e.spd;
       const nx2=e.wx+nx*spd,ny2=e.wy+ny*spd;
       if(!isSolid(nx2,e.wy))e.wx=nx2;
       if(!isSolid(e.wx,ny2))e.wy=ny2;
+      // Update elevation to terrain
       e.elev=getElev(e.wx,e.wy);
     }else{
       e.wanderAngle+=(Math.random()-.5)*.2;
@@ -1684,10 +1325,9 @@ function updateProjectiles(dt){
     p.life-=dt;
     if(p.life<=0||isSolid(p.wx,p.wy)){projectiles.splice(i,1);continue;}
 
-    let killed=false;
     for(const e of enemies){
       if(p.hit.has(e))continue;
-      if(!canAttack(p.fromElev,e.elev))continue;
+      if(!canAttack(p.fromElev,e.elev))continue; // elevation blocks
       if(dist(p.wx,p.wy,e.wx,e.wy)<e.r+p.r){
         p.hit.add(e);
         e.hp-=p.dmg;
@@ -1695,63 +1335,35 @@ function updateProjectiles(dt){
         if(p.dot)e.dotTimer=3;
         if(p.vamp)player.hp=Math.min(player.maxHp,player.hp+p.dmg*.3);
         spawnParticles(e.wx,e.wy,p.color,5,2);
-        if(p.aoe>0){
-          for(const e2 of enemies){
-            if(dist(p.wx,p.wy,e2.wx,e2.wy)<p.aoe+e2.r){
-              e2.hp-=p.dmg*.5;
-              spawnParticles(e2.wx,e2.wy,p.color,3,1.5);
-            }
+        if(p.aoe>0)enemies.forEach(e2=>{if(dist(p.wx,p.wy,e2.wx,e2.wy)<p.aoe+e2.r){e2.hp-=p.dmg*.5;spawnParticles(e2.wx,e2.wy,p.color,3,1.5);}});
+
+        // Kill check
+        enemies.filter(e2=>e2.hp<=0).forEach(e2=>{
+          player.xp+=e2.xp;
+          addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
+          spawnParticles(e2.wx,e2.wy,e2.color,20,4);
+          // Drop all pre-rolled items
+          if(e2.drops&&e2.drops.length>0){
+            const angle=Math.random()*Math.PI*2;
+            e2.drops.forEach((item,di)=>{
+              const a=angle+di*0.8;
+              const spread=12+di*8;
+              droppedWands.push({
+                wx:e2.wx+Math.cos(a)*spread,
+                wy:e2.wy+Math.sin(a)*spread,
+                wand:Object.assign({},item)
+              });
+              const label=item.type==='crystal'?`${item.name}×${item.qty||1}`:item.name;
+              addLog(`掉落: ${label}`,'loot');
+            });
           }
-        }
-        if(!p.pierce){projectiles.splice(i,1);killed=true;break;}
+          enemies.splice(enemies.indexOf(e2),1);
+          checkLevelUp();
+        });
+
+        if(!p.pierce){projectiles.splice(i,1);break;}
       }
     }
-    if(killed)continue;
-  }
-
-  // 死亡处理放到循环外，避免在迭代中修改数组
-  const dead=enemies.filter(e=>e.hp<=0);
-  for(const e2 of dead){
-    player.xp+=e2.xp;
-    addLog(`击杀 ${e2.name} +${e2.xp}xp`,'imp');
-    spawnParticles(e2.wx,e2.wy,e2.color,20,4);
-
-    // 死亡后在原地生成可拾取遗骸箱
-    if(e2.drops&&e2.drops.length>0){
-      const mainItem=Object.assign({},e2.drops[0]);
-      const extraItems=e2.drops.slice(1).map(it=>Object.assign({},it));
-      const corpse={
-        wx:e2.wx, wy:e2.wy,
-        wand:mainItem,
-        extraLoot:extraItems,
-        opened:false,
-        gp:0,
-        grade:'drop',
-        gradeColor:0xcc4444,
-        gradeEmissive:0x220000,
-        gradeScale:0.3,
-        isCorpse:true,
-      };
-      chests.push(corpse);
-      // 立即在3D场景建mesh
-      const sc=0.3;
-      const mat=new THREE.MeshLambertMaterial({color:0xcc4444,emissive:0x220000});
-      const box=new THREE.Mesh(new THREE.BoxGeometry(U*sc,U*sc*0.7,U*sc),mat);
-      box.position.set(e2.wx,U*sc*0.35,e2.wy);
-      scene3.add(box);
-      chestMeshes3.push(box);
-      const pillarMat=new THREE.MeshBasicMaterial({color:0xcc4444});
-      const pillar=new THREE.Mesh(new THREE.CylinderGeometry(2,2,U*0.5,6),pillarMat);
-      pillar.position.set(e2.wx,U*sc*0.7+U*0.25,e2.wy);
-      scene3.add(pillar);
-      chestMeshes3.push(pillar);
-
-      const label=e2.drops.map(it=>it.type==='crystal'?`${it.name}×${it.qty||1}`:it.name).join(', ');
-      addLog(`掉落: ${label}`,'loot');
-    }
-
-    enemies.splice(enemies.indexOf(e2),1);
-    checkLevelUp();
   }
 }
 
@@ -1860,8 +1472,7 @@ function renderHomebase(){
       slotEl.innerHTML=
         `<span class="eslot-icon">${it.icon}</span>`+
         `<span class="eslot-name">${it.name.split(' ')[0]}</span>`+
-        `<span class="eslot-del" onclick="unequipSlot('${type}',event)" title="卸下退回仓库">✕</span>`+
-        `<span style="position:absolute;bottom:2px;right:3px;font-size:5px;color:#d97706;cursor:pointer" onclick="sellEquippedItem('${type}',event)" title="直接卖掉">卖</span>`;
+        `<span class="eslot-del" onclick="unequipSlot('${type}',event)">✕</span>`;
     } else {
       slotEl.className='equip-slot'+(isSel?' selected':'');
       const empIcon={'weapon':'⚔','armor':'🛡','boots':'👢','acc':'💍'}[type];
@@ -1962,92 +1573,27 @@ function renderHomebase(){
 }
 
 
-function raidEquipClick(slot){
-  // 在raid中点击装备槽：未来功能
-}
-
-// homebase: 装备槽点击后选中，再点仓库格子或卖出
-function clickEquipSlot(type){
-  if(selectedStorage!==null&&stash[selectedStorage]){
-    const it=stash[selectedStorage];
-    const isWand=!it.type;
-    const itType=isWand?'weapon':it.type;
-    if(itType===type||(type==='weapon'&&isWand)){
-      if(equipSlots[type]) addToStash(equipSlots[type]);
-      if(it.type==='crystal'){return;}
-      equipSlots[type]=Object.assign({},it);
-      stash.splice(selectedStorage,1);
-      selectedStorage=null;
-      updateLoadoutHint();
-      renderHomebase();
-    }
-  } else {
-    // 选中/取消选中装备槽
-    selectedEquipSlot=(selectedEquipSlot===type)?null:type;
-    selectedStorage=null;
-    renderHomebase();
-  }
-}
-
-function unequipSlot(type,e){
-  if(e) e.stopPropagation();
-  if(equipSlots[type]){addToStash(equipSlots[type]);equipSlots[type]=null;}
-  selectedEquipSlot=null;
-  renderHomebase();
-}
-
-function sellEquippedItem(type,e){
-  if(e) e.stopPropagation();
-  const it=equipSlots[type];
-  if(!it)return;
-  const price=Math.floor((marketPrices[it.id]||it.basePrice||20)*0.7);
-  gold+=price;
-  equipSlots[type]=null;
-  selectedEquipSlot=null;
-  renderHomebase();
-}
-function renderRaidEquipSlots(){
-  const defs={
-    weapon:{fallback:'⚔', label:'WEAPON', getItem:()=>player.equippedWeapon},
-    armor: {fallback:'🛡', label:'ARMOR',  getItem:()=>player.equippedArmor},
-    boots: {fallback:'👢', label:'BOOTS',  getItem:()=>player.equippedBoots},
-    acc:   {fallback:'💍', label:'ACC',    getItem:()=>player.equippedAcc},
+function updateInRaidEquipDisplay(){
+  const slots={
+    weapon:{id:'ieq-weapon',fallback:'⚔',label:'武器'},
+    armor:{id:'ieq-armor',fallback:'🛡',label:'防'},
+    boots:{id:'ieq-boots',fallback:'👢',label:'鞋'},
+    acc:{id:'ieq-acc',fallback:'💍',label:'饰'},
   };
-  Object.entries(defs).forEach(([type,cfg])=>{
-    const el=document.getElementById('req-'+type);
+  Object.entries(slots).forEach(([type,cfg])=>{
+    const el=document.getElementById(cfg.id);
     if(!el)return;
-    const item=cfg.getItem();
+    const item=type==='weapon'?getEquipped():player['equipped'+type.charAt(0).toUpperCase()+type.slice(1)];
     if(item){
-      const stat=(item.dmgMin?`DMG ${item.dmgMin}-${item.dmgMax} RNG ${item.range}`:'')
-               +(item.def?`DEF ${item.def}`:'')
-               +(item.spd?`SPD +${item.spd}`:'')
-               +(item.maxHp?`HP +${item.maxHp}`:'');
-      el.className='req-slot filled';
-      el.innerHTML=`<span class="req-icon">${item.icon}</span><div class="req-info"><span class="req-label">${cfg.label}</span><span class="req-name">${item.name}</span><span class="req-stat">${stat}</span></div>`;
+      el.className='inv-eq-slot filled';
+      el.innerHTML=`<span class="ieq-icon">${item.icon}</span><span class="ieq-label">${cfg.label}</span>`;
+      el.style.borderColor=(item.color||'#15803d')+'88';
     } else {
-      el.className='req-slot';
-      el.innerHTML=`<span class="req-icon" style="opacity:0.25">${cfg.fallback}</span><div class="req-info"><span class="req-label" style="color:#2e2e3a">${cfg.label}</span><span class="req-name" style="color:#2a2a3a">— empty —</span></div>`;
+      el.className='inv-eq-slot';
+      el.innerHTML=`<span style="font-size:16px;color:#d0cfc8">${cfg.fallback}</span><span class="ieq-label" style="color:#d0cfc8">${cfg.label}</span>`;
+      el.style.borderColor='';
     }
   });
-
-  // 弹药槽
-  const ammoEl=document.getElementById('raid-ammo-grid');
-  if(!ammoEl)return;
-  ammoEl.innerHTML='';
-  const pool=player.ammoPool||[];
-  const maxSlots=4;
-  for(let i=0;i<maxSlots;i++){
-    const slot=document.createElement('div');
-    const entry=pool[i];
-    if(entry&&entry.qty>0){
-      slot.className='ammo-slot filled';
-      slot.innerHTML=`<span class="ammo-icon">${entry.crystal.icon}</span><span class="ammo-qty">×${entry.qty}</span><span class="ammo-name">${entry.crystal.name}</span>`;
-    } else {
-      slot.className='ammo-slot';
-      slot.innerHTML=`<span class="ammo-icon" style="opacity:0.2">💎</span><span class="ammo-name" style="color:#2a2a3a">— 空 —</span>`;
-    }
-    ammoEl.appendChild(slot);
-  }
 }
 function updateLoadoutHint(){
   document.getElementById('loadout-hint').textContent=
@@ -2144,32 +1690,6 @@ function buyItem(id,price){
   renderHomebase();
 }
 
-
-// Toggle side panels
-let activePanel = null;
-function togglePanel(name){
-  const panels = ['equip','bag'];
-  // If clicking active panel, close it
-  if(activePanel === name){
-    document.getElementById('panel-'+name).style.display='none';
-    document.getElementById('tab-'+name).classList.remove('active');
-    activePanel = null;
-    return;
-  }
-  // Close all panels first
-  panels.forEach(p=>{
-    document.getElementById('panel-'+p).style.display='none';
-    document.getElementById('tab-'+p).classList.remove('active');
-  });
-  // Open requested
-  document.getElementById('panel-'+name).style.display='block';
-  document.getElementById('tab-'+name).classList.add('active');
-  activePanel = name;
-  if(name==='bag') updateInvGrid();
-  if(name==='equip') renderRaidEquipSlots();
-}
-function showLootPanel(){ document.getElementById('raid-loot').style.display='block'; }
-function hideLootPanel(){ document.getElementById('raid-loot').style.display='none'; }
 // ═══════════════════════════════════════════════════════════
 // RAID START
 // ═══════════════════════════════════════════════════════════
@@ -2193,22 +1713,8 @@ function startRaid(){
     document.getElementById('touch-btns').style.display='flex';
   }
 
-  activePanel=null;
-  ['equip','bag'].forEach(p=>{const el=document.getElementById('panel-'+p);if(el)el.style.display='none';const t=document.getElementById('tab-'+p);if(t)t.classList.remove('active');});
-  hideLootPanel();
   updateInvGrid();
   updateAmmoHud();
-  buildMap3();
-  buildChestMeshes3();
-  initCamControls3();
-  // 建攻击范围圆圈
-  const _w = equipSlots.weapon;
-  buildRangeRing3(_w ? _w.range : 40);
-  // 立刻把相机定位到玩家出生点，避免第一帧看到原点
-  const _initAngle = camAngle3 * Math.PI / 180;
-  const _initDist  = camHeight3 / Math.tan(Math.max(5, camAngle3) * Math.PI / 180);
-  camera3.position.set(player.wx, camHeight3, player.wy + _initDist);
-  camera3.lookAt(player.wx, 0, player.wy);
   addLog('进入 FORSAKEN SANCTUM','imp');
   addLog('搜刮·撤离·勿死','info');
   // increment raids counter async
@@ -2223,65 +1729,396 @@ function startRaid(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// DRAW — ISOMETRIC RENDERING
+// DRAW — 2.5D ELEVATION SYSTEM
 // ═══════════════════════════════════════════════════════════
-// 旧2D canvas 已替换为 Three.js，仅保留小地图canvas
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
 const mmCanvas=document.getElementById('mm-canvas');
 const mmCtx=mmCanvas.getContext('2d');
 
-// ── BATTLE LOG ──
+// Visual Y offset per elevation level (higher = drawn higher up on screen)
+const ELEV_Y_OFFSET=[0,-16,-32];
+const FLOOR_TOP=[
+  ['#16161f','#141419','#17171e'],  // lv0 dark stone
+  ['#1e2232','#1c2030','#20253a'],  // lv1 raised blue-grey
+  ['#26203e','#231e3c','#2a2446'],  // lv2 high platform purple
+];
+const LEDGE_FACE=[
+  null,
+  ['#0c0c18','#0a0a14','#0e0e1c'],
+  ['#120d26','#100b22','#150f2c'],
+];
+const WALL_TOP =['#1c1c2a','#191926','#202030'];
+const WALL_FACE=['#0c0c16','#0a0a12','#0f0f1e'];
+
+function worldToScreen(wx,wy,elv){
+  const e=elv!==undefined?elv:getElev(wx,wy);
+  return{x:wx-cam.x, y:wy-cam.y+ELEV_Y_OFFSET[e]};
+}
+function entityScreenY(wy,elv){ return wy-cam.y+ELEV_Y_OFFSET[elv||0]; }
+
+function drawMap(){
+  const sc=Math.max(0,Math.floor(cam.x/TILE));
+  const ec=Math.min(COLS,Math.ceil((cam.x+W)/TILE)+2);
+  const sr=Math.max(0,Math.floor(cam.y/TILE));
+  const er=Math.min(ROWS,Math.ceil((cam.y+H)/TILE)+4);
+
+  // ── Pass 1: Draw floor tiles with smooth height-based coloring ──
+  for(let r=sr;r<er;r++){
+    for(let c=sc;c<ec;c++){
+      if(!tileMap[r])continue;
+      const t=tileMap[r][c];
+      const elv=elevMap[r]?elevMap[r][c]||0:0;
+      const h=heightMap[r]?heightMap[r][c]||0:0;
+      const sx=c*TILE-cam.x;
+      const sy=r*TILE-cam.y+ELEV_Y_OFFSET[elv];
+
+      if(t===1){
+        // Wall — solid dark block with top highlight
+        ctx.fillStyle=WALL_TOP[(r*3+c*7)%3];
+        ctx.fillRect(sx,sy,TILE,TILE);
+        ctx.fillStyle='rgba(255,255,255,0.03)';
+        ctx.fillRect(sx,sy,TILE,2);
+      } else {
+        // Floor: color interpolated from height
+        // lv0: #14141c  lv1: #1e2232  lv2: #26203e
+        const t01=Math.min(1,Math.max(0,(h-0.3)/0.22)); // 0→1 as h goes 0.3→0.52
+        const t12=Math.min(1,Math.max(0,(h-0.52)/0.2)); // 0→1 as h goes 0.52→0.72
+        let r_=0x14,g_=0x14,b_=0x1c;
+        // lerp lv0 → lv1
+        r_=Math.round(r_+(0x1e-0x14)*t01);
+        g_=Math.round(g_+(0x22-0x14)*t01);
+        b_=Math.round(b_+(0x32-0x1c)*t01);
+        // lerp lv1 → lv2
+        r_=Math.round(r_+(0x26-0x1e)*t12);
+        g_=Math.round(g_+(0x20-0x22)*t12);
+        b_=Math.round(b_+(0x3e-0x32)*t12);
+        ctx.fillStyle=`rgb(${r_},${g_},${b_})`;
+        ctx.fillRect(sx,sy,TILE,TILE);
+        // Subtle checker detail
+        if((r+c)%9===0){ctx.fillStyle='rgba(255,255,255,0.01)';ctx.fillRect(sx+14,sy+14,5,5);}
+      }
+    }
+  }
+
+  // ── Pass 2: Smooth ledge faces using height gradients ──
+  for(let r=sr;r<er;r++){
+    for(let c=sc;c<ec;c++){
+      if(!tileMap[r])continue;
+      const t=tileMap[r][c];
+      const elv=elevMap[r]?elevMap[r][c]||0:0;
+      const h=heightMap[r]?heightMap[r][c]||0:0;
+      if(elv===0&&t!==1)continue;
+
+      const sx=c*TILE-cam.x;
+      const sy=r*TILE-cam.y+ELEV_Y_OFFSET[elv];
+      const ci=(r*3+c*7)%3;
+
+      // South face
+      const rB=r+1;
+      const elvB=rB<ROWS&&elevMap[rB]?elevMap[rB][c]||0:0;
+      const tB=rB<ROWS&&tileMap[rB]?tileMap[rB][c]:0;
+      const hB=rB<ROWS&&heightMap[rB]?heightMap[rB][c]||0:0;
+
+      if(t===1?tB===0:elv>elvB){
+        // Face height proportional to height difference for smooth look
+        const faceH=t===1?18:Math.round(16*elv+(h-hB)*8);
+        const fy=sy+TILE;
+        const topColor=t===1?WALL_FACE[ci%3]:LEDGE_FACE[elv][ci%3];
+        const grad=ctx.createLinearGradient(sx,fy,sx,fy+faceH);
+        grad.addColorStop(0,topColor);
+        grad.addColorStop(1,'rgba(0,0,0,0.95)');
+        ctx.fillStyle=grad;
+        ctx.fillRect(sx,fy,TILE,faceH);
+        ctx.fillStyle='rgba(0,0,0,0.45)';
+        ctx.fillRect(sx,fy+faceH-1,TILE,2);
+      }
+
+      // West face
+      const cL=c-1;
+      const elvL=cL>=0&&elevMap[r]?elevMap[r][cL]||0:0;
+      const tL=cL>=0&&tileMap[r]?tileMap[r][cL]:0;
+      const hL=cL>=0&&heightMap[r]?heightMap[r][cL]||0:0;
+      if(t===1?tL===0:elv>elvL){
+        const faceH=t===1?18:Math.round(16*elv+(h-hL)*8);
+        const grad=ctx.createLinearGradient(sx-5,sy,sx,sy);
+        grad.addColorStop(0,'rgba(0,0,0,0.75)');
+        grad.addColorStop(1,t===1?WALL_FACE[ci%3]:LEDGE_FACE[elv][ci%3]);
+        ctx.fillStyle=grad;
+        ctx.fillRect(sx-5,sy+3,5,TILE+faceH-3);
+      }
+    }
+  }
+
+  // ── Pass 3: Smooth contour lines at elevation transitions ──
+  // Draw a soft gradient strip where height changes between tiles
+  ctx.save();
+  // Pass 3: contour glow at elevation boundaries (no hard lines)
+  ctx.globalAlpha=0.12;
+  for(let r=sr;r<er-1;r++){
+    for(let c=sc;c<ec-1;c++){
+      if(!tileMap[r]||!tileMap[r+1])continue;
+      const e0=elevMap[r]?elevMap[r][c]||0:0;
+      const e1=elevMap[r+1]?elevMap[r+1][c]||0:0;
+      if(tileMap[r][c]||tileMap[r+1][c])continue;
+      if(e0===e1)continue;
+      // Only draw glow on the HIGH side
+      if(e0<e1)continue;
+      const hi=e0;
+      const sx=c*TILE-cam.x;
+      const sy=(r+1)*TILE-cam.y+ELEV_Y_OFFSET[e0];
+      const edgeColor=hi===2?'#9d8fff':'#6a8fff';
+      const grad=ctx.createLinearGradient(sx,sy-2,sx,sy+10);
+      grad.addColorStop(0,edgeColor);
+      grad.addColorStop(1,'transparent');
+      ctx.fillStyle=grad;
+      ctx.fillRect(sx,sy-2,TILE,12);
+    }
+  }
+  ctx.restore();
+}
+
+function drawScatter(){
+  for(const p of scatterProps){
+    const sx=p.wx-cam.x;
+    const sy=entityScreenY(p.wy,p.elv);
+    if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+    ctx.save();
+    if(p.glow){
+      p.phase+=0.04;
+      const pulse=0.6+0.4*Math.sin(p.phase);
+      ctx.shadowColor=p.color.replace('88','');
+      ctx.shadowBlur=p.light?12*pulse:6*pulse;
+      ctx.globalAlpha=p.light?0.6+0.4*pulse:0.7;
+    } else {
+      ctx.globalAlpha=0.55+Math.random()*0.05;
+    }
+    ctx.font=`${Math.round(p.r*p.scale*2)}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillStyle=p.color;
+    ctx.fillText(p.icon,sx,sy+p.r);
+    // Torch: draw small flame above
+    if(p.light){
+      const fp=0.5+0.5*Math.sin(p.phase*2.3);
+      ctx.globalAlpha=0.4+0.4*fp;
+      ctx.shadowColor='#f97316';ctx.shadowBlur=16;
+      ctx.fillStyle='#fb923c';
+      ctx.font='10px sans-serif';
+      ctx.fillText('🔥',sx,sy-4);
+    }
+    ctx.restore();
+  }
+}
+
+function drawExtractPoint(){
+  const elv=getElev(extractPoint.wx,extractPoint.wy);
+  const sx=extractPoint.wx-cam.x;
+  const sy=entityScreenY(extractPoint.wy,elv);
+  if(sx<-70||sx>W+70||sy<-70||sy>H+70)return;
+  const p=.5+.5*Math.sin(frames*.08);
+  ctx.save();
+  ctx.globalAlpha=.12+p*.12;ctx.fillStyle='#4ade80';
+  ctx.beginPath();ctx.arc(sx,sy,48+p*10,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;ctx.strokeStyle='#4ade80';ctx.lineWidth=2;
+  ctx.shadowColor='#4ade80';ctx.shadowBlur=14;
+  ctx.beginPath();ctx.arc(sx,sy,36,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#4ade80';ctx.font='18px sans-serif';ctx.textAlign='center';
+  ctx.fillText('▲',sx,sy+6);
+  ctx.font='8px "Share Tech Mono"';ctx.fillText('EXTRACT',sx,sy+20);
+  ctx.restore();
+}
+
+function drawChests(){
+  for(const ch of chests){
+    if(ch.opened)continue;
+    const elv=getElev(ch.wx,ch.wy);
+    const sx=ch.wx-cam.x;
+    const sy=entityScreenY(ch.wy,elv);
+    if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+    ch.gp+=.035;
+    const g=.5+.5*Math.sin(ch.gp);
+    const isTarget=pickupTarget===ch;
+    ctx.save();
+    ctx.shadowColor=ch.wand.color;ctx.shadowBlur=8+g*12;
+    ctx.fillStyle='#13131f';ctx.fillRect(sx-11,sy-11,22,22);
+    ctx.strokeStyle=isTarget?'#fbbf24':ch.wand.color;
+    ctx.lineWidth=isTarget?2:1.5;ctx.strokeRect(sx-11,sy-11,22,22);
+    ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle=ch.wand.color;ctx.fillText(ch.wand.icon,sx,sy+5);
+    ctx.restore();
+    if(dist(player.wx,player.wy,ch.wx,ch.wy)<PICKUP_RANGE){
+      ctx.fillStyle='#fbbf24';ctx.font='7px "Share Tech Mono"';ctx.textAlign='center';
+      ctx.fillText(isTarget?'拾取中...':'[点击拾取]',sx,sy-16);
+    }
+  }
+}
+
+function drawDroppedWands(){
+  for(const dw of droppedWands){
+    const elv=getElev(dw.wx,dw.wy);
+    const sx=dw.wx-cam.x;
+    const sy=entityScreenY(dw.wy,elv);
+    if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+    const isTarget=pickupTarget===dw;
+    ctx.save();ctx.shadowColor=dw.wand.color;ctx.shadowBlur=14;
+    ctx.font='16px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle=dw.wand.color;ctx.fillText(dw.wand.icon,sx,sy+5);
+    if(isTarget){ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,sy,16,0,Math.PI*2);ctx.stroke();}
+    ctx.restore();
+    if(dist(player.wx,player.wy,dw.wx,dw.wy)<PICKUP_RANGE){
+      ctx.fillStyle='#fbbf24';ctx.font='7px "Share Tech Mono"';ctx.textAlign='center';
+      ctx.fillText(isTarget?'拾取中...':'[点击拾取]',sx,sy-18);
+    }
+  }
+}
+
+// Painter's algorithm: sort all entities by (wy + elev*1000) back-to-front
+function drawEntitiesSorted(){
+  const pElev=getElev(player.wx,player.wy);
+  const ents=[];
+  for(const e of enemies){
+    const sx=e.wx-cam.x, sy=entityScreenY(e.wy,e.elev);
+    if(sx<-60||sx>W+60||sy<-80||sy>H+60)continue;
+    ents.push({type:'e',e,sortY:e.wy+e.elev*1000});
+  }
+  if(gameState!=='dead')
+    ents.push({type:'p',sortY:player.wy+pElev*1000});
+  ents.sort((a,b)=>a.sortY-b.sortY);
+  for(const ent of ents){
+    if(ent.type==='e')_drawEnemy(ent.e,pElev);
+    else _drawPlayer(pElev);
+  }
+}
+
+function _drawEnemy(e,pElev){
+  const sx=e.wx-cam.x;
+  const sy=entityScreenY(e.wy,e.elev);
+  const canHit=canAttack(e.elev,pElev);
+
+  // Ground shadow (at world floor level, no elev offset)
+  ctx.save();
+  ctx.globalAlpha=0.25;
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(sx,e.wy-cam.y+2,e.r*.85,e.r*.28,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor=e.color;ctx.shadowBlur=canHit?14:3;
+  const bg=ctx.createRadialGradient(sx-3,sy-4,1,sx,sy,e.r);
+  bg.addColorStop(0,e.color+'dd');bg.addColorStop(1,e.color+'22');
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.arc(sx,sy,e.r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=e.color;
+  ctx.lineWidth=canHit?1.8:0.5;
+  ctx.globalAlpha=canHit?1:0.35;
+  ctx.stroke();
+  ctx.restore();
+
+  // Elevation dot above head
+  if(e.elev>0){
+    ctx.save();
+    ctx.fillStyle=e.elev===2?'#67e8f9':'#fbbf24';
+    ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(sx,sy-e.r-7,3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  // HP bar
+  if(e.hp<e.maxHp){
+    const bw=e.r*2+6,bh=3,bx=sx-bw/2,by=sy-e.r-14;
+    ctx.fillStyle='#080810';ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle=e.color;ctx.fillRect(bx,by,bw*(e.hp/e.maxHp),bh);
+  }
+}
+
+function _drawPlayer(pElev){
+  const sx=player.wx-cam.x;
+  const bounce=player.visualBounce||0;
+  const sy=entityScreenY(player.wy,pElev)+bounce;
+  const w=getEquipped();
+  const color=w?w.color:'#e2e8f0';
+
+  // Ground shadow
+  ctx.save();
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(sx,player.wy-cam.y+2,player.r*.85,player.r*.28,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor=color;ctx.shadowBlur=20;
+  ctx.strokeStyle=color;ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(sx,sy,player.r+5,0,Math.PI*2);ctx.stroke();
+  const g=ctx.createRadialGradient(sx-3,sy-4,1,sx,sy,player.r);
+  g.addColorStop(0,'#f1f5f9');g.addColorStop(1,'#94a3b8');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,player.r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  const range=w?w.range:40;
+  ctx.save();ctx.globalAlpha=.05;ctx.strokeStyle=color;ctx.lineWidth=1;
+  ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(sx,sy,range,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+
+  document.getElementById('elev-badge').textContent=ELEV_NAMES[pElev];
+  document.getElementById('elev-badge').style.color=ELEV_COLORS[pElev];
+}
+
+function drawProjectiles(){
+  for(const p of projectiles){
+    const sx=p.wx-cam.x;
+    const sy=entityScreenY(p.wy,p.fromElev||0);
+    ctx.save();ctx.shadowColor=p.color;ctx.shadowBlur=12;
+    ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const sx=p.wx-cam.x,sy=p.wy-cam.y;
+    ctx.save();ctx.globalAlpha=p.life/p.maxLife;ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(sx,sy,p.r*(p.life/p.maxLife),0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMinimap(){
+  const mm=mmCtx,mw=90,mh=90;
+  const sxr=MAP_W/mw,syr=MAP_H/mh;
+  mm.fillStyle='#070710';mm.fillRect(0,0,mw,mh);
+  const ELEV_MM=['#101018','#161628','#1e1838'];
+  for(let r=0;r<ROWS;r+=2)for(let c=0;c<COLS;c+=2){
+    if(!tileMap[r])continue;
+    const t=tileMap[r][c];
+    const elv=elevMap[r]?elevMap[r][c]||0:0;
+    mm.fillStyle=t===1?'#242434':ELEV_MM[elv];
+    mm.fillRect(c*TILE/sxr,r*TILE/syr,2,2);
+  }
+  mm.fillStyle='#e53e3e';enemies.forEach(e=>mm.fillRect(e.wx/sxr-1,e.wy/syr-1,2,2));
+  mm.fillStyle='#4ade80';mm.fillRect(extractPoint.wx/sxr-2,extractPoint.wy/syr-2,5,5);
+  mm.fillStyle='#fbbf24';chests.forEach(ch=>{if(!ch.opened)mm.fillRect(ch.wx/sxr-1,ch.wy/syr-1,2,2);});
+  mm.fillStyle='#fff';mm.beginPath();mm.arc(player.wx/sxr,player.wy/syr,3,0,Math.PI*2);mm.fill();
+  mm.strokeStyle='#ffffff18';mm.lineWidth=.5;mm.strokeRect(cam.x/sxr,cam.y/syr,W/sxr,H/syr);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════════════════════════
 const logEl=document.getElementById('log');
 function addLog(msg,cls=''){
   const d=document.createElement('div');
-  d.className='log-line'+(cls?' '+cls:'');
-  d.textContent=msg;
-  logEl.prepend(d);
-  while(logEl.children.length>8)logEl.removeChild(logEl.lastChild);
+  d.className='log-line'+(cls?' '+cls:'');d.textContent=msg;
+  logEl.prepend(d);while(logEl.children.length>7)logEl.removeChild(logEl.lastChild);
 }
 
-// ── AMMO HUD ──
-function updateAmmoHud(){
-  const el=document.getElementById('ammo-hud');
-  if(!el)return;
-  if(!player||!player.ammoPool||player.ammoPool.length===0){
-    el.textContent='';return;
-  }
-  el.textContent=player.ammoPool.map(a=>`${a.crystal.icon}×${a.qty}`).join(' ');
-}
-
-// ── UTILITIES ──
-function dist(ax,ay,bx,by){return Math.sqrt((ax-bx)**2+(ay-by)**2);}
-function normalize(dx,dy){const d=Math.sqrt(dx*dx+dy*dy)||1;return[dx/d,dy/d];}
-
-// 2D camera (used by loop for entity position tracking)
-function updateCamera(){
-  cam.x=player.wx-W/2;cam.y=player.wy-H/2;
-  cam.x=Math.max(0,Math.min(MAP_W-W,cam.x));
-  cam.y=Math.max(0,Math.min(MAP_H-H,cam.y));
-}
-
-// ── CYCLE WEAPON ──
-function cycleWeapon(){
-  if(!player||player.inventory.length===0)return;
-  player.equippedIdx=((player.equippedIdx||0)+1)%player.inventory.length;
-  const entry=player.inventory[player.equippedIdx];
-  const it=entry?.item||entry?.wand;
-  if(it) addLog(`装备: ${it.name}`,'info');
-  updateInvGrid();
-}
-
-// ── SCALE APP ──
-function scaleApp(){
-  const app=document.getElementById('app');
-  const sc=Math.min(window.innerWidth/900,window.innerHeight/600);
-  app.style.transform=`scale(${sc})`;
-  app.style.left=((window.innerWidth-900*sc)/2)+'px';
-  app.style.top=((window.innerHeight-600*sc)/2)+'px';
-}
-scaleApp();
-window.addEventListener('resize',scaleApp);
-
-// ── KEYBOARD INPUT ──
+// ═══════════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════════
 const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;
@@ -2291,13 +2128,39 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
-// click canvas for pickup
-document.getElementById('three-canvas').addEventListener('click',e=>{
+// Click on canvas to start pickup
+canvas.addEventListener('click',e=>{
   if(gameState!=='playing')return;
   tryStartPickup();
 });
+canvas.addEventListener('touchstart',e=>{
+  if(gameState!=='playing')return;
+  e.preventDefault();
+  tryStartPickup();
+},{passive:false});
 
-// ── TOUCH JOYSTICK ──
+function cycleWeapon(){
+  if(player.inventory.length===0)return;
+  player.equippedIdx=((player.equippedIdx||0)+1)%player.inventory.length;
+  addLog(`装备: ${player.inventory[player.equippedIdx].wand.name}`,'info');
+  updateInvGrid();
+}
+
+// Camera
+function updateCamera(){
+  cam.x=player.wx-W/2;cam.y=player.wy-H/2;
+  cam.x=Math.max(0,Math.min(MAP_W-W,cam.x));
+  cam.y=Math.max(0,Math.min(MAP_H-H,cam.y));
+}
+
+// Util
+function dist(ax,ay,bx,by){return Math.sqrt((ax-bx)**2+(ay-by)**2);}
+function normalize(dx,dy){const d=Math.sqrt(dx*dx+dy*dy)||1;return[dx/d,dy/d];}
+
+// ═══════════════════════════════════════════════════════════
+// TOUCH JOYSTICK
+// ═══════════════════════════════════════════════════════════
+
 function initJoystick(){
   const base=document.getElementById('joystick-base');
   const knob=document.getElementById('joystick-knob');
@@ -2329,522 +2192,22 @@ function getTouchMove(){
   if(!joystickActive)return[0,0];
   return[joystickDelta.x/JOYSTICK_MAX,joystickDelta.y/JOYSTICK_MAX];
 }
-// ctx stub（部分旧代码引用，防止报错）
-const ctx={ clearRect:()=>{}, fillRect:()=>{}, createRadialGradient:()=>({addColorStop:()=>{}}),
-  save:()=>{}, restore:()=>{}, globalAlpha:1, fillStyle:'', beginPath:()=>{},
-  arc:()=>{}, fill:()=>{}, stroke:()=>{}, strokeStyle:'', lineWidth:1 };
 
 // ═══════════════════════════════════════════════════════════
-// THREE.JS 渲染引擎
+// SCALE
 // ═══════════════════════════════════════════════════════════
-
-// ── 常量 ──
-const U      = TILE;        // 世界单位 = 原来的TILE像素
-const PLAT_H = 1.0;         // 平台高度
-const WALL_H = 2.5;         // 墙高度
-const SLAB   = 0.2;         // 地面板厚度
-const PX_TO_U = 1;          // 像素到世界单位1:1（later可调整）
-
-// ── Renderer ──
-const threeCanvas = document.getElementById('three-canvas');
-const renderer3 = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true });
-renderer3.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer3.setSize(W, H);
-renderer3.shadowMap.enabled = true;
-renderer3.shadowMap.type = THREE.PCFSoftShadowMap;
-
-const scene3 = new THREE.Scene();
-scene3.background = new THREE.Color(0x0a0e14);
-scene3.fog = new THREE.Fog(0x0a0e14, MAP_W * 0.6, MAP_W * 1.1);
-
-// ── 正交相机 ──
-let camHeight3  = 800;
-let camAngle3   = 45;   // 俯角（度）
-let orthoSize3  = 420;
-const ASPECT3   = W / H;
-
-const camera3 = new THREE.OrthographicCamera(
-  -orthoSize3 * ASPECT3, orthoSize3 * ASPECT3,
-   orthoSize3, -orthoSize3, 0.1, 8000
-);
-
-function updateFrustum3() {
-  camera3.left   = -orthoSize3 * ASPECT3;
-  camera3.right  =  orthoSize3 * ASPECT3;
-  camera3.top    =  orthoSize3;
-  camera3.bottom = -orthoSize3;
-  camera3.updateProjectionMatrix();
+function scaleApp(){
+  const app=document.getElementById('app');
+  const sc=Math.min(window.innerWidth/900,window.innerHeight/600);
+  app.style.transform=`scale(${sc})`;
+  app.style.left=((window.innerWidth-900*sc)/2)+'px';
+  app.style.top=((window.innerHeight-600*sc)/2)+'px';
 }
-updateFrustum3();
+scaleApp();window.addEventListener('resize',scaleApp);
 
-// ── 光源 ──
-scene3.add(new THREE.AmbientLight(0x1a2030, 3.5));  // 偏冷蓝，柔和
-
-const sun3 = new THREE.DirectionalLight(0xc8b89a, 1.8);  // 暖色但不刺眼
-sun3.castShadow = true;
-sun3.shadow.mapSize.set(2048, 2048);
-sun3.shadow.camera.left = sun3.shadow.camera.bottom = -MAP_W * 0.7;
-sun3.shadow.camera.right = sun3.shadow.camera.top   =  MAP_W * 0.7;
-sun3.shadow.camera.far   = 3000;
-sun3.shadow.bias = -0.001;
-scene3.add(sun3);
-
-const sunTarget3 = new THREE.Object3D();
-scene3.add(sunTarget3);
-sun3.target = sunTarget3;
-
-const fill3 = new THREE.DirectionalLight(0x1a2844, 0.5);  // 深蓝补光
-fill3.position.set(-MAP_W * 0.3, MAP_W * 0.3, MAP_W * 0.5);
-scene3.add(fill3);
-
-// ── 材质 ──
-const MAT3 = {
-  floor:    new THREE.MeshLambertMaterial({ color: 0x1c2030 }),   // 深蓝灰地板
-  platform: new THREE.MeshLambertMaterial({ color: 0x1e2a38 }),
-  ramp:     new THREE.MeshLambertMaterial({ color: 0x1a2432, side: THREE.DoubleSide }),
-  wall:     new THREE.MeshLambertMaterial({ color: 0x0d1220 }),   // 几乎黑的墙
-  wallTop:  new THREE.MeshLambertMaterial({ color: 0x151c2a }),
-  extract:  new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.6, side: THREE.DoubleSide }),
-  extractPillar: new THREE.MeshLambertMaterial({ color: 0x4ade80, transparent: true, opacity: 0.15, emissive: 0x1a5c30 }),
-};
-
-// ── 楔形三棱柱（斜坡）──
-// dir: 'N'低边朝北(低边-Z), 'S'低边朝南(+Z), 'E'低边朝东(+X), 'W'低边朝西(-X)
-function makeWedgeGeo(dir) {
-  const h = PLAT_H, u = U;
-  // 6个顶点：底面4角 + 高边2角
-  let verts;
-  if (dir === 'N') { // 北侧低，南侧高
-    verts = [
-      -u/2,0, u/2,  u/2,0, u/2,  -u/2,0,-u/2,  u/2,0,-u/2,  // 底面
-      -u/2,h, u/2,  u/2,h, u/2,  // 南侧高边
-    ];
-  } else if (dir === 'S') { // 南侧低，北侧高
-    verts = [
-      -u/2,0, u/2,  u/2,0, u/2,  -u/2,0,-u/2,  u/2,0,-u/2,
-      -u/2,h,-u/2,  u/2,h,-u/2,  // 北侧高边
-    ];
-  } else if (dir === 'E') { // 东侧低，西侧高
-    verts = [
-      -u/2,0, u/2,  u/2,0, u/2,  -u/2,0,-u/2,  u/2,0,-u/2,
-      -u/2,h, u/2,  -u/2,h,-u/2, // 西侧高边
-    ];
-  } else { // 'W': 西侧低，东侧高
-    verts = [
-      -u/2,0, u/2,  u/2,0, u/2,  -u/2,0,-u/2,  u/2,0,-u/2,
-      u/2,h, u/2,   u/2,h,-u/2,  // 东侧高边
-    ];
-  }
-
-  // 三角面索引（顶点: 0SW 1SE 2NW 3NE 4high_a 5high_b）
-  const tris = {
-    N: [[0,1,4],[1,5,4], [2,4,3],[3,4,5], [0,4,2], [1,3,5], [0,2,1],[1,2,3]],
-    S: [[2,4,3],[3,4,5], [0,1,4],[1,5,4], [2,0,4], [3,5,1], [0,2,1],[1,2,3]],
-    E: [[0,4,2],[2,4,5], [1,0,4],[0,5,4], [0,1,2],[1,3,2], [0,2,4],[1,5,3]],
-    W: [[1,4,3],[3,4,5], [0,4,1],[0,5,4], [0,1,2],[1,3,2], [1,4,0],[3,5,2]],
-  };
-
-  const faces = tris[dir];
-  const positions = [], normals = [];
-  for (const [a,b,c] of faces) {
-    const ax=verts[a*3],ay=verts[a*3+1],az=verts[a*3+2];
-    const bx=verts[b*3],by=verts[b*3+1],bz=verts[b*3+2];
-    const cx=verts[c*3],cy=verts[c*3+1],cz=verts[c*3+2];
-    positions.push(ax,ay,az, bx,by,bz, cx,cy,cz);
-    const ux_=bx-ax, uy_=by-ay, uz_=bz-az;
-    const vx_=cx-ax, vy_=cy-ay, vz_=cz-az;
-    const nx=uy_*vz_-uz_*vy_, ny=uz_*vx_-ux_*vz_, nz=ux_*vy_-uy_*vx_;
-    const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
-    normals.push(nx/nl,ny/nl,nz/nl, nx/nl,ny/nl,nz/nl, nx/nl,ny/nl,nz/nl);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute('normal',   new THREE.Float32BufferAttribute(normals, 3));
-  return geo;
-}
-
-// ── 构建地图场景 ──
-let mapMeshes3 = [];  // 所有地图mesh，startRaid时重建
-
-function buildMap3() {
-  // 清除旧mesh
-  for (const m of mapMeshes3) scene3.remove(m);
-  mapMeshes3 = [];
-
-  function add(m) { m.receiveShadow = true; m.castShadow = true; scene3.add(m); mapMeshes3.push(m); }
-
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const t   = tileMap[r][c];
-      const elv = elevMap[r][c] || 0;
-      const sl  = slopeMap[r][c];
-      const cx  = c * U + U/2;
-      const cz  = r * U + U/2;
-
-      if (t === 1) {
-        // 墙
-        const m = new THREE.Mesh(new THREE.BoxGeometry(U, WALL_H, U), MAT3.wall);
-        m.position.set(cx, WALL_H/2, cz);
-        add(m);
-        const top = new THREE.Mesh(new THREE.BoxGeometry(U+0.1, 0.15, U+0.1), MAT3.wallTop);
-        top.position.set(cx, WALL_H + 0.075, cz);
-        add(top);
-
-      } else if (sl === 'ramp') {
-        // 斜坡：判断坡向（看相邻格高度差）
-        const hN = r>0        ? (heightMap[r-1]?.[c]||0) : 0;
-        const hS = r<ROWS-1   ? (heightMap[r+1]?.[c]||0) : 0;
-        const hW = c>0        ? (heightMap[r]?.[c-1]||0) : 0;
-        const hE = c<COLS-1   ? (heightMap[r]?.[c+1]||0) : 0;
-        // 高边方向 = 哪边邻居更高
-        let dir = 'N';
-        const maxD = Math.max(hN,hS,hE,hW);
-        if      (hN === maxD) dir = 'S';  // 北边高 → 低边朝南
-        else if (hS === maxD) dir = 'N';  // 南边高 → 低边朝北
-        else if (hE === maxD) dir = 'W';  // 东边高 → 低边朝西
-        else                  dir = 'E';  // 西边高 → 低边朝东
-
-        // 底面地板
-        const base = new THREE.Mesh(new THREE.BoxGeometry(U, SLAB, U), MAT3.floor);
-        base.position.set(cx, -SLAB/2, cz);
-        add(base);
-        // 楔形
-        const wedge = new THREE.Mesh(makeWedgeGeo(dir), MAT3.ramp);
-        wedge.position.set(cx, 0, cz);
-        add(wedge);
-
-      } else if (elv >= 1) {
-        // 平台
-        const base = new THREE.Mesh(new THREE.BoxGeometry(U, SLAB, U), MAT3.floor);
-        base.position.set(cx, -SLAB/2, cz);
-        add(base);
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(U, PLAT_H, U), MAT3.platform);
-        plat.position.set(cx, PLAT_H/2, cz);
-        add(plat);
-
-      } else {
-        // 지면
-        const m = new THREE.Mesh(new THREE.BoxGeometry(U, SLAB, U), MAT3.floor);
-        m.position.set(cx, -SLAB/2, cz);
-        add(m);
-      }
-    }
-  }
-
-  // 撤离点
-  const ex3 = extractPoint.wx + U/2, ez3 = extractPoint.wy + U/2;
-  const ering = new THREE.Mesh(new THREE.RingGeometry(U*0.4, U*0.65, 32), MAT3.extract);
-  ering.rotation.x = -Math.PI/2;
-  ering.position.set(ex3, 0.03, ez3);
-  scene3.add(ering); mapMeshes3.push(ering);
-  const epillar = new THREE.Mesh(new THREE.CylinderGeometry(U*0.1, U*0.4, U*1.5, 8), MAT3.extractPillar);
-  epillar.position.set(ex3, U*0.75, ez3);
-  scene3.add(epillar); mapMeshes3.push(epillar);
-}
-
-// ── 实体 3D Mesh 管理 ──
-// player mesh
-const playerMesh3 = new THREE.Group();
-{
-  const mat = new THREE.MeshLambertMaterial({ color: 0x5b8dd9, emissive: 0x0a1428 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(U*0.14, U*0.16, U*0.44, 12), mat);
-  body.position.y = U*0.22; body.castShadow = true; playerMesh3.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(U*0.11, 12, 8), mat);
-  head.position.y = U*0.5; head.castShadow = true; playerMesh3.add(head);
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(U*0.17, U*0.23, 20),
-    new THREE.MeshBasicMaterial({ color:0x3a88ff, transparent:true, opacity:0.45, side:THREE.DoubleSide })
-  );
-  ring.rotation.x = -Math.PI/2; ring.position.y = 0.02; playerMesh3.add(ring);
-}
-scene3.add(playerMesh3);
-
-// enemy meshes pool
-const enemyMeshPool3 = [];
-function getEnemyMesh3(color) {
-  const mat = new THREE.MeshLambertMaterial({ color: color||0xc0392b, emissive: 0x0e0404 });
-  const g = new THREE.Group();
-  const b = new THREE.Mesh(new THREE.CylinderGeometry(U*0.13, U*0.15, U*0.4, 10), mat);
-  b.position.y = U*0.2; b.castShadow = true; g.add(b);
-  const h = new THREE.Mesh(new THREE.SphereGeometry(U*0.1, 10, 7), mat);
-  h.position.y = U*0.47; h.castShadow = true; g.add(h);
-  g.visible = false;
-  scene3.add(g);
-  return g;
-}
-// 预建池
-for (let i = 0; i < 30; i++) enemyMeshPool3.push(getEnemyMesh3(0xff3a3a));
-
-// chest meshes
-const chestMeshes3 = [];
-
-// dropped item meshes
-const droppedMeshes3 = [];
-
-// projectile meshes - 每种颜色独立材质，尺寸加大
-const projMeshes3 = [];
-const projGeo3 = new THREE.SphereGeometry(U * 0.35, 8, 6);  // 14个世界单位，可见
-const projMatCache3 = {};
-function getProjMat3(color) {
-  if (!projMatCache3[color]) {
-    projMatCache3[color] = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color || '#ffdd44'),
-      transparent: true, opacity: 0.92
-    });
-  }
-  return projMatCache3[color];
-}
-
-// particle meshes (简单用点）
-const partMeshes3 = [];
-const partMat3 = new THREE.MeshBasicMaterial({ color: 0xff8844 });
-const partGeo3 = new THREE.SphereGeometry(U * 0.04, 4, 3);
-
-// 格线（地面装饰）
-{
-  const g = new THREE.EdgesGeometry(
-    new THREE.PlaneGeometry(MAP_W, MAP_H, COLS, ROWS)
-  );
-  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-    color: 0x2a3040, transparent: true, opacity: 0.08
-  }));
-  l.rotation.x = -Math.PI / 2;
-  l.position.set(MAP_W/2, 0.01, MAP_H/2);
-  scene3.add(l);
-}
-
-// ── 获取世界坐标对应的3D高度 ──
-function getWorldY3(wx, wy) {
-  const c = wx / TILE, r = wy / TILE;
-  const ic = Math.floor(c), ir = Math.floor(r);
-  const fc = c - ic, fr = r - ir;
-  function gh(rr, cc) {
-    if (rr<0||rr>=ROWS||cc<0||cc>=COLS) return 0;
-    const h = heightMap[rr]?.[cc] || 0;
-    return h * PLAT_H;
-  }
-  return gh(ir,ic)*(1-fc)*(1-fr) + gh(ir,ic+1)*fc*(1-fr)
-       + gh(ir+1,ic)*(1-fc)*fr   + gh(ir+1,ic+1)*fc*fr;
-}
-
-// ── 血条 sprite（每个敌人独立 canvas）──
-const hpBarSprites3 = [];
-
-function makeHpBarSprite3() {
-  const cv = document.createElement('canvas');
-  cv.width = 64; cv.height = 10;
-  const ctx = cv.getContext('2d');
-  const tex = new THREE.CanvasTexture(cv);
-  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: true });
-  const sp  = new THREE.Sprite(mat);
-  sp.scale.set(U*1.4, U*0.22, 1);
-  scene3.add(sp);
-  return { sprite: sp, tex, cv, ctx };
-}
-
-function updateHpBar3(bar, pct) {
-  const { ctx, cv, tex } = bar;
-  ctx.clearRect(0, 0, 64, 10);
-  ctx.fillStyle = '#1a0a0a';
-  ctx.fillRect(0, 0, 64, 10);
-  ctx.fillStyle = pct > 0.6 ? '#4ade80' : pct > 0.3 ? '#fbbf24' : '#f87171';
-  ctx.fillRect(1, 1, Math.round(62 * pct), 8);
-  tex.needsUpdate = true;
-}
-
-// ── 攻击范围圆圈 ──
-let rangeRing3 = null;
-function buildRangeRing3(radius) {
-  if (rangeRing3) scene3.remove(rangeRing3);
-  const segs = 64;
-  const pts = [];
-  for (let i = 0; i <= segs; i++) {
-    const a = (i / segs) * Math.PI * 2;
-    pts.push(new THREE.Vector3(Math.cos(a)*radius, 0.1, Math.sin(a)*radius));
-  }
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  const mat = new THREE.LineBasicMaterial({ color: 0xd97706, transparent: true, opacity: 0.5 });
-  rangeRing3 = new THREE.Line(geo, mat);
-  scene3.add(rangeRing3);
-}
-
-// ── 同步实体Mesh到游戏状态 ──
-let prevEnemyCount3 = 0;
-
-function syncEntities3() {
-  // Player
-  const py3 = getWorldY3(player.wx, player.wy);
-  playerMesh3.position.x = player.wx;
-  playerMesh3.position.z = player.wy;
-  playerMesh3.position.y += (py3 - playerMesh3.position.y) * 0.25;
-
-  // 攻击范围圆圈跟随玩家
-  if (rangeRing3) {
-    rangeRing3.position.x = player.wx;
-    rangeRing3.position.z = player.wy;
-    rangeRing3.position.y = 0.1;
-  }
-
-  // Enemies + HP bars
-  for (let i = 0; i < enemyMeshPool3.length; i++) {
-    const m = enemyMeshPool3[i];
-    const e = enemies[i];
-    if (!e) {
-      m.visible = false;
-      if (hpBarSprites3[i]) hpBarSprites3[i].sprite.visible = false;
-      continue;
-    }
-    m.visible = true;
-    const ey3 = getWorldY3(e.wx, e.wy);
-    m.position.x = e.wx;
-    m.position.z = e.wy;
-    m.position.y += (ey3 - m.position.y) * 0.2;
-
-    // 颜色同步
-    const mat = m.children[0]?.material;
-    if (mat && mat.color) {
-      const col = new THREE.Color(e.color || '#ff3a3a');
-      if (!mat.color.equals(col)) mat.color.set(col);
-    }
-
-    // 血条
-    if (!hpBarSprites3[i]) hpBarSprites3[i] = makeHpBarSprite3();
-    const bar = hpBarSprites3[i];
-    updateHpBar3(bar, Math.max(0, e.hp / e.maxHp));
-    bar.sprite.visible = true;
-    bar.sprite.position.set(e.wx, m.position.y + U*0.75, e.wy);
-  }
-
-  // Chests - 每个箱子对应2个mesh（box + pillar）
-  for (let i = 0; i < chests.length; i++) {
-    const ch = chests[i];
-    const mBox    = chestMeshes3[i*2];
-    const mPillar = chestMeshes3[i*2+1];
-    const vis = !ch.opened;
-    if (mBox)    mBox.visible    = vis;
-    if (mPillar) mPillar.visible = vis;
-  }
-
-  // Projectiles
-  for (let i = 0; i < 60; i++) {
-    const p = projectiles[i];
-    if (!p) {
-      if (projMeshes3[i]) projMeshes3[i].visible = false;
-      continue;
-    }
-    if (!projMeshes3[i]) {
-      const m = new THREE.Mesh(projGeo3, getProjMat3(p.color));
-      m.visible = false;
-      scene3.add(m);
-      projMeshes3[i] = m;
-    }
-    const m = projMeshes3[i];
-    m.visible = true;
-    m.material = getProjMat3(p.color);
-    m.position.set(p.wx, U * 0.35, p.wy);  // 固定飞行高度，不贴地
-  }
-}
-
-// ── 构建初始chest mesh ──
-function buildChestMeshes3() {
-  for (const m of chestMeshes3) scene3.remove(m);
-  chestMeshes3.length = 0;
-  for (const ch of chests) {
-    const sc = ch.gradeScale || 0.4;
-    const mat = new THREE.MeshLambertMaterial({
-      color: ch.gradeColor || 0xc8a030,
-      emissive: ch.gradeEmissive || 0x221000
-    });
-    const m = new THREE.Mesh(new THREE.BoxGeometry(U*sc, U*sc*0.7, U*sc), mat);
-    m.position.set(ch.wx, U*sc*0.35, ch.wy);
-    m.castShadow = true;
-    scene3.add(m);
-    chestMeshes3.push(m);
-
-    // 等级标牌（小竖杆）
-    const pillarMat = new THREE.MeshBasicMaterial({ color: ch.gradeColor || 0xc8a030 });
-    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, U*0.6, 6), pillarMat);
-    pillar.position.set(ch.wx, U*sc*0.7+U*0.3, ch.wy);
-    scene3.add(pillar);
-    chestMeshes3.push(pillar);
-  }
-}
-
-// ── 相机更新 ──
-function updateCamera3(dt) {
-  const angleRad = Math.max(5, camAngle3) * Math.PI / 180;
-  const camDist  = camHeight3 / Math.tan(angleRad);
-
-  // 相机始终跟随玩家XZ，高度固定不跟地形走
-  const targetX = player.wx;
-  const targetY = camHeight3;          // 固定高度，不随玩家Y偏移
-  const targetZ = player.wy + camDist;
-
-  camera3.position.x += (targetX - camera3.position.x) * Math.min(1, 8 * dt);
-  camera3.position.y += (targetY - camera3.position.y) * Math.min(1, 8 * dt);
-  camera3.position.z += (targetZ - camera3.position.z) * Math.min(1, 8 * dt);
-  camera3.lookAt(player.wx, 0, player.wy);   // 始终看向地面高度0，不跟py3
-
-  // 光源跟随
-  const ld = 800;
-  sun3.position.set(player.wx + ld*0.5, camHeight3 * 1.2, player.wy - ld*0.3);
-  sunTarget3.position.set(player.wx, 0, player.wy);
-}
-
-// ── 滑动条初始化 ──
-function initCamControls3() {
-  const slH = document.getElementById('sl-h');
-  const slA = document.getElementById('sl-a');
-  const slZ = document.getElementById('sl-z');
-  if (!slH) return;
-  slH.addEventListener('input', () => {
-    camHeight3 = parseFloat(slH.value);
-    document.getElementById('val-h').textContent = camHeight3;
-  });
-  slA.addEventListener('input', () => {
-    camAngle3 = parseFloat(slA.value);
-    document.getElementById('val-a').textContent = camAngle3;
-  });
-  slZ.addEventListener('input', () => {
-    orthoSize3 = parseFloat(slZ.value);
-    document.getElementById('val-z').textContent = orthoSize3;
-    updateFrustum3();
-  });
-  [slH,slA,slZ].forEach(s => s.addEventListener('keydown', e => e.stopPropagation()));
-}
-
-// ── 小地图（仍用2D canvas） ──
-function drawMinimap3() {
-  const mm = mmCtx, mw = 90, mh = 90;
-  const sxr = MAP_W/mw, syr = MAP_H/mh;
-  mm.fillStyle = '#0a0a14'; mm.fillRect(0,0,mw,mh);
-  for (let r=0;r<ROWS;r+=2) for (let c=0;c<COLS;c+=2) {
-    if (!tileMap[r]) continue;
-    const t = tileMap[r][c];
-    const elv = elevMap[r]?.[c]||0;
-    const isRamp = slopeMap[r]?.[c]==='ramp';
-    mm.fillStyle = t===1?'#1e1e2a':elv>=1?'#4a6070':isRamp?'#3a5060':'#2a2a38';
-    mm.fillRect(c*TILE/sxr, r*TILE/syr, TILE/sxr+0.5, TILE/syr+0.5);
-  }
-  mm.fillStyle='#f87171'; enemies.forEach(e=>mm.fillRect(e.wx/sxr-1,e.wy/syr-1,2,2));
-  mm.fillStyle='#4ade80'; mm.fillRect(extractPoint.wx/sxr-2,extractPoint.wy/syr-2,4,4);
-  const gradeClr={'S':'#ffd700','A':'#818cf8','B':'#94a3b8'};
-  chests.forEach(ch=>{if(!ch.opened){mm.fillStyle=gradeClr[ch.grade]||'#fbbf24';mm.fillRect(ch.wx/sxr-1,ch.wy/syr-1,3,3);}});
-  mm.fillStyle='#fff'; mm.beginPath(); mm.arc(player.wx/sxr,player.wy/syr,3,0,Math.PI*2); mm.fill();
-  // 视口框
-  const ar = camHeight3 / Math.tan(Math.max(5,camAngle3)*Math.PI/180);
-  const vw = orthoSize3*2*ASPECT3/sxr, vh = orthoSize3*2/syr;
-  mm.strokeStyle='rgba(255,255,255,0.3)'; mm.lineWidth=1;
-  mm.strokeRect(player.wx/sxr - vw/2, player.wy/syr - vh/2, vw, vh);
-}
-
-// ── 渲染一帧 ──
-function render3(dt) {
-  syncEntities3();
-  updateCamera3(dt);
-  drawMinimap3();
-  renderer3.render(scene3, camera3);
-}
+// ═══════════════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════════════
 function loop(ts){
   const dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;frames++;
 
@@ -2897,7 +2260,7 @@ function loop(ts){
         do{wx=100+Math.random()*(MAP_W-200);wy=100+Math.random()*(MAP_H-200);tries++;}
         while((isSolid(wx,wy)||dist(wx,wy,player.wx,player.wy)<280)&&tries<40);
         const t=ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)];
-        const drops2=rollEnemyDrops(ENEMY_TYPES[Math.floor(Math.random()*ENEMY_TYPES.length)]);
+        const drops2=rollEnemyDrops();
         enemies.push({wx,wy,hp:t.hp,maxHp:t.hp,spd:t.spd,dmg:t.dmg,color:t.color,r:t.r,xp:t.xp,name:t.name,
           elev:getElev(wx,wy),attackCd:0,attackRate:1.1,aggroRange:200,wanderAngle:Math.random()*Math.PI*2,
           drops:drops2,slowTimer:0,dotTimer:0,ranged:t.ranged||false,range:t.range||60,phase:0});
@@ -2910,23 +2273,34 @@ function loop(ts){
   }
 
   if(gameState==='playing'||gameState==='dead'){
-    render3(dt);
+    ctx.clearRect(0,0,W,H);
+    drawMap();drawScatter();drawExtractPoint();drawChests();drawDroppedWands();
+    drawParticles();drawEntitiesSorted();drawProjectiles();
+
+    // Vignette
+    const vig=ctx.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.72);
+    vig.addColorStop(0,'transparent');vig.addColorStop(1,'rgba(0,0,0,.6)');
+    ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
+
+    // Low HP
+    if(gameState==='playing'&&player.hp<player.maxHp*.3){
+      ctx.save();ctx.globalAlpha=.1+.08*Math.sin(frames*.3);ctx.fillStyle='#e53e3e';ctx.fillRect(0,0,W,H);ctx.restore();
+    }
+    drawMinimap();
   }
 
   requestAnimationFrame(loop);
 }
 
 // ═══════════════════════════════════════════════════════════
-// INIT — 先加载 gamedata.json，再启动游戏
+// INIT
 // ═══════════════════════════════════════════════════════════
-function initGame(){
-  refreshMarket();
-  initJoystick();
-  requestAnimationFrame(ts=>{lastTime=ts;requestAnimationFrame(loop);});
-  initAuth();
-}
-// 启动：加载数据 → initGame()
-loadGameData();
+refreshMarket();
+initJoystick();
+// Don't show homebase yet — wait for auth check
+// goHomebase() is called after login/load save
+requestAnimationFrame(ts=>{lastTime=ts;requestAnimationFrame(loop);});
+initAuth(); // Check session → show login or save select
 </script>
 </body>
 </html>
