@@ -961,8 +961,26 @@ function genMap(){
   for(let r=0;r<ROWS;r++){ tileMap[r][0]=1; tileMap[r][COLS-1]=1; }
   for(let c=0;c<COLS;c++){ tileMap[0][c]=1; tileMap[ROWS-1][c]=1; }
 
-  // 完全平面，无平台无斜坡
-  // elevMap/heightMap/slopeMap 全部保持0/null
+  // ── 高台区域（地图中央偏左）──
+  // 高台：约 10×8 格
+  const PR = 12, PC = 8;    // 高台左上角行列（距边界留空间）
+  const PH = 8, PW = 10;   // 高台高度(行)×宽度(列)
+  for(let r=PR;r<PR+PH;r++) for(let c=PC;c<PC+PW;c++){
+    elevMap[r][c]=1; heightMap[r][c]=1.0;
+  }
+  // 南侧斜坡（高台底边向下2格）：row = PR+PH, PR+PH+1
+  for(let c=PC+1;c<PC+PW-1;c++){
+    slopeMap[PR+PH][c]='ramp';
+    heightMap[PR+PH][c]=0.5;
+    slopeMap[PR+PH+1][c]=null;   // 地面
+  }
+  // 西侧斜坡（高台左侧）
+  for(let r=PR+1;r<PR+PH-1;r++){
+    slopeMap[r][PC-1]='ramp';
+    heightMap[r][PC-1]=0.5;
+  }
+  // 高台墙壁（东侧加几个掩体）
+  for(let r=PR+2;r<PR+5;r++) tileMap[r][PC+PW]=1;
 
   genScatter();
 }
@@ -1160,9 +1178,14 @@ function spawnChests(){
       let wx,wy,tries=0;
       do{wx=80+Math.random()*(MAP_W-160);wy=80+Math.random()*(MAP_H-160);tries++;}
       while(isSolid(wx,wy)&&tries<50);
-      const lootItems=gradeConf.loot();
-      const mainItem=lootItems[0];
-      const extraLoot=lootItems.slice(1);
+      let lootItems=gradeConf.loot();
+      // 兜底：至少给一个灵晶，防止空箱
+      if(!lootItems||lootItems.length===0){
+        const c=getCrystal(ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)],1);
+        if(c) lootItems=[Object.assign({},c,{qty:5})];
+      }
+      const mainItem=lootItems&&lootItems[0]?lootItems[0]:null;
+      const extraLoot=lootItems?lootItems.slice(1):[];
       chests.push({
         wx,wy,
         wand:mainItem,
@@ -1452,7 +1475,7 @@ function updatePickup(dt){
   pickupProgress+=dt/PICKUP_TIME;
   document.getElementById('pickup-bar-wrap').style.display='flex';
   document.getElementById('pickup-fill').style.width=(pickupProgress*100)+'%';
-  document.getElementById('pickup-label').textContent='LOOTING: '+pickupTarget.wand.name;
+  document.getElementById('pickup-label').textContent='LOOTING: '+getLootName(pickupTarget);
 
   if(pickupProgress>=1){
     finishPickup();
@@ -1571,6 +1594,16 @@ function closeLootPanelSilent(){
 }
 
 
+// 获取可拾取对象的显示名称
+function getLootName(source){
+  if(!source) return 'ITEM';
+  if(source.wand && source.wand.name) return source.wand.name;
+  if(source.extraLoot && source.extraLoot.length>0 && source.extraLoot[0].name)
+    return source.extraLoot[0].name;
+  if(source.isCorpse) return 'LOOT';
+  return source.grade ? source.grade+' CHEST' : 'CHEST';
+}
+
 function tryStartPickup(){
   // Find nearest lootable
   let best=null,bestD=PICKUP_RANGE;
@@ -1587,7 +1620,7 @@ function tryStartPickup(){
     if(pickupTarget===best)return; // already looting this
     pickupTarget=best;
     pickupProgress=0;
-    addLog(`开始拾取 ${best.wand.name}...`,'info');
+    addLog(`开始拾取 ${getLootName(best)}...`,'info');
   }
 }
 
@@ -1783,9 +1816,14 @@ function updateProjectiles(dt){
     spawnParticles(e2.wx,e2.wy,e2.color,20,4);
 
     // 死亡后在原地生成可拾取遗骸箱
-    if(e2.drops&&e2.drops.length>0){
-      const mainItem=Object.assign({},e2.drops[0]);
-      const extraItems=e2.drops.slice(1).map(it=>Object.assign({},it));
+    {
+      // 遗骸箱：若无预滚掉落则现场生成一个灵晶
+      const rawDrops = (e2.drops&&e2.drops.length>0) ? e2.drops : (()=>{
+        const el=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
+        const c=getCrystal(el,1); return c?[Object.assign({},c,{qty:3+Math.floor(Math.random()*5)})] : [];
+      })();
+      const mainItem = rawDrops.length>0 ? Object.assign({},rawDrops[0]) : {name:'CRYSTAL SHARD',icon:'💠',type:'crystal',qty:1,basePrice:5,size:[1,1]};
+      const extraItems=rawDrops.slice(1).map(it=>Object.assign({},it));
       const corpse={
         wx:e2.wx, wy:e2.wy,
         wand:mainItem,
@@ -2841,7 +2879,9 @@ function updateCamera3(dt) {
   camera3.position.x += (targetX - camera3.position.x) * Math.min(1, 8 * dt);
   camera3.position.y += (targetY - camera3.position.y) * Math.min(1, 8 * dt);
   camera3.position.z += (targetZ - camera3.position.z) * Math.min(1, 8 * dt);
-  camera3.lookAt(player.wx, 0, player.wy);   // 始终看向地面高度0，不跟py3
+  camera3.up.set(0, 1, 0);                   // 锁定上方向，防止 roll
+  camera3.lookAt(player.wx, 0, player.wy);
+  camera3.rotation.z = 0;                    // 强制消除 roll 分量
 
   // 光源跟随
   const ld = 800;
