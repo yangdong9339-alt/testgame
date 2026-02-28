@@ -731,6 +731,8 @@ let CONFIG={
 const COLS=Math.ceil(MAP_W/TILE),ROWS=Math.ceil(MAP_H/TILE);
 const PICKUP_TIME=1.8;
 const JOYSTICK_MAX=40;
+// PICKUP_RANGE 从 CONFIG 读（applyGameData 后会更新），先给默认值
+let PICKUP_RANGE=46;
 
 const ELEV_NAMES=['LOW GROUND','MID GROUND','HIGH GROUND'];
 const ELEV_COLORS=['#4a3a2a','#4a4a2a','#2a4a5a'];
@@ -761,6 +763,7 @@ function refreshMarket(){
 function applyGameData(gd){
   // CONFIG
   if(gd.config) Object.assign(CONFIG, gd.config);
+  if(CONFIG.PICKUP_RANGE) PICKUP_RANGE = CONFIG.PICKUP_RANGE;
 
   // WANDS
   WANDS = gd.wands || [];
