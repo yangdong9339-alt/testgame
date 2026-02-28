@@ -961,7 +961,22 @@ function genMap(){
   for(let r=0;r<ROWS;r++){ tileMap[r][0]=1; tileMap[r][COLS-1]=1; }
   for(let c=0;c<COLS;c++){ tileMap[0][c]=1; tileMap[ROWS-1][c]=1; }
 
-  // 纯平地图，高台由 buildPlatform3D() 直接生成 Three.js 物件
+  // ── 提前写入平台区域到 elevMap（供 buildMap3 tile 循环跳过）──
+  {
+    const PX = MAP_W * 0.35, PZ = MAP_H * 0.38;
+    const PW = TILE * 8,     PD = TILE * 6;
+    const RW = TILE * 2;  // 斜坡格数（tile 循环只需跳过平台核心）
+    const c0=Math.floor((PX-PW/2)/TILE), c1=Math.ceil((PX+PW/2)/TILE);
+    const r0=Math.floor((PZ-PD/2)/TILE), r1=Math.ceil((PZ+PD/2)/TILE);
+    // 平台核心区：elevMap=2（用2区分"独立平台"，tile循环跳过）
+    for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++){
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS) elevMap[r][c]=2;
+    }
+    // 斜坡区：elevMap=3（tile循环也跳过，由3D物件自己渲染地面）
+    for(let r=r0-2;r<r1+2;r++) for(let c=c0-2;c<c1+2;c++){
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS&&elevMap[r][c]===0) elevMap[r][c]=3;
+    }
+  }
   genScatter();
 }
 
@@ -2595,8 +2610,11 @@ function buildMap3() {
         plat.position.set(cx, PLAT_H/2, cz);
         add(plat);
 
+      } else if (elv >= 2) {
+        // 独立平台区域：由 buildPlatform3D 负责渲染，tile循环跳过
+        continue;
       } else {
-        // 지면
+        // 普通地面
         const m = new THREE.Mesh(new THREE.BoxGeometry(U, SLAB, U), MAT3.floor);
         m.position.set(cx, -SLAB/2, cz);
         add(m);
@@ -2613,8 +2631,8 @@ function buildMap3() {
     const PZ  = MAP_H * 0.38;      // 平台中心 Z
     const PW  = U * 8;             // 平台宽 X
     const PD  = U * 6;             // 平台深 Z
-    const PH  = U * 0.5;           // 平台高度（≈20单位，角色身高≈17，看得到侧面）
-    const RW  = U * 3;             // 斜坡水平延伸距离
+    const PH  = U * 0.9;           // 平台高度（≈36单位 ≈ 2倍角色身高，清晰可见）
+    const RW  = U * 2;             // 斜坡水平延伸距离（2格）
 
     const matTop  = new THREE.MeshLambertMaterial({ color: 0x243c54 });
     const matSide = new THREE.MeshLambertMaterial({ color: 0x162030 });
@@ -2692,21 +2710,7 @@ function buildMap3() {
     makeWedge(PX + PW/2, PZ,        PD, -Math.PI/2);   // 东
     makeWedge(PX - PW/2, PZ,        PD,  Math.PI/2);   // 西
 
-    // ── elevMap：让游戏物理层识别高地 ──
-    const c0=Math.floor((PX-PW/2)/TILE), c1=Math.ceil((PX+PW/2)/TILE);
-    const r0=Math.floor((PZ-PD/2)/TILE), r1=Math.ceil((PZ+PD/2)/TILE);
-    for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++){
-      if(r>=0&&r<ROWS&&c>=0&&c<COLS){ elevMap[r][c]=1; heightMap[r][c]=1.0; }
-    }
-    const rampTiles = Math.ceil(RW/TILE);
-    for(let r=r0-rampTiles;r<=r1+rampTiles;r++) for(let c=c0-rampTiles;c<=c1+rampTiles;c++){
-      if(r<0||r>=ROWS||c<0||c>=COLS||elevMap[r][c]===1) continue;
-      const wx=(c+0.5)*TILE, wz=(r+0.5)*TILE;
-      const dx=Math.max(0,Math.abs(wx-PX)-PW/2);
-      const dz=Math.max(0,Math.abs(wz-PZ)-PD/2);
-      const dd=Math.max(dx,dz);
-      if(dd<=RW) heightMap[r][c]=Math.max(0,1-dd/RW);
-    }
+    // elevMap 已在 genMap() 中写入，此处无需重复
   })();
   // 撤离点
   const ex3 = extractPoint.wx + U/2, ez3 = extractPoint.wy + U/2;
