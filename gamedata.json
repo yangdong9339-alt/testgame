@@ -1,0 +1,828 @@
+{
+  "wands": [
+    {
+      "id": "ember",
+      "name": "EMBER WAND",
+      "icon": "🔥",
+      "dmg": [
+        12.0,
+        18.0
+      ],
+      "range": 160.0,
+      "spd": 1.5,
+      "color": "#f97316",
+      "proj": "#fb923c",
+      "desc": "火焰·中距",
+      "basePrice": 120,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "frost",
+      "name": "FROST STAFF",
+      "icon": "❄️",
+      "dmg": [
+        8.0,
+        14.0
+      ],
+      "range": 240.0,
+      "spd": 0.9,
+      "color": "#67e8f9",
+      "proj": "#a5f3fc",
+      "desc": "冰霜·远距·减速",
+      "basePrice": 150,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "thunder",
+      "name": "THUNDER ROD",
+      "icon": "⚡",
+      "dmg": [
+        22.0,
+        34.0
+      ],
+      "range": 130.0,
+      "spd": 0.55,
+      "color": "#fbbf24",
+      "proj": "#fde68a",
+      "desc": "雷击·高伤",
+      "basePrice": 200,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "void",
+      "name": "VOID SCEPTER",
+      "icon": "🌀",
+      "dmg": [
+        15.0,
+        22.0
+      ],
+      "range": 190.0,
+      "spd": 1.1,
+      "color": "#a855f7",
+      "proj": "#c084fc",
+      "desc": "虚空·AOE穿透",
+      "basePrice": 180,
+      "aoe": 32.0,
+      "slow": false,
+      "pierce": true,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "nature",
+      "name": "NATURE WAND",
+      "icon": "🌿",
+      "dmg": [
+        10.0,
+        16.0
+      ],
+      "range": 200.0,
+      "spd": 1.3,
+      "color": "#4ade80",
+      "proj": "#86efac",
+      "desc": "自然·吸血",
+      "basePrice": 160,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": true,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "ancient",
+      "name": "ANCIENT TOME",
+      "icon": "📜",
+      "dmg": [
+        28.0,
+        44.0
+      ],
+      "range": 260.0,
+      "spd": 0.45,
+      "color": "#fcd34d",
+      "proj": "#fef08a",
+      "desc": "远古·超高伤",
+      "basePrice": 300,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "poison",
+      "name": "POISON ORB",
+      "icon": "💀",
+      "dmg": [
+        6.0,
+        10.0
+      ],
+      "range": 170.0,
+      "spd": 1.6,
+      "color": "#84cc16",
+      "proj": "#bef264",
+      "desc": "毒·持续伤害",
+      "basePrice": 100,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": false,
+      "vamp": false,
+      "dot": true,
+      "size": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "blood",
+      "name": "BLOOD LANCE",
+      "icon": "🩸",
+      "dmg": [
+        18.0,
+        28.0
+      ],
+      "range": 150.0,
+      "spd": 0.8,
+      "color": "#dc2626",
+      "proj": "#f87171",
+      "desc": "血矛·高穿透",
+      "basePrice": 220,
+      "aoe": 0.0,
+      "slow": false,
+      "pierce": true,
+      "vamp": false,
+      "dot": false,
+      "size": [
+        1,
+        3
+      ]
+    }
+  ],
+  "armors": [
+    {
+      "id": "robe1",
+      "name": "TATTERED ROBE",
+      "icon": "👘",
+      "type": "armor",
+      "tier": 1,
+      "color": "#78716c",
+      "basePrice": 60,
+      "desc": "防御+3",
+      "size": [
+        1,
+        2
+      ],
+      "def": 3.0
+    },
+    {
+      "id": "robe2",
+      "name": "WOVEN MANTLE",
+      "icon": "🥻",
+      "type": "armor",
+      "tier": 2,
+      "color": "#a16207",
+      "basePrice": 130,
+      "desc": "防御+7",
+      "size": [
+        1,
+        2
+      ],
+      "def": 7.0
+    },
+    {
+      "id": "robe3",
+      "name": "ARCANE VESTMENT",
+      "icon": "🩱",
+      "type": "armor",
+      "tier": 3,
+      "color": "#6366f1",
+      "basePrice": 240,
+      "desc": "防御+13",
+      "size": [
+        1,
+        2
+      ],
+      "def": 13.0
+    },
+    {
+      "id": "robe4",
+      "name": "VOID SHROUD",
+      "icon": "🦺",
+      "type": "armor",
+      "tier": 4,
+      "color": "#a855f7",
+      "basePrice": 400,
+      "desc": "防御+22",
+      "size": [
+        1,
+        2
+      ],
+      "def": 22.0
+    },
+    {
+      "id": "boot1",
+      "name": "WORN SANDALS",
+      "icon": "👡",
+      "type": "boots",
+      "tier": 1,
+      "color": "#78716c",
+      "basePrice": 50,
+      "desc": "速度+0.3",
+      "size": [
+        1,
+        2
+      ],
+      "spd": 0.3
+    },
+    {
+      "id": "boot2",
+      "name": "LEATHER BOOTS",
+      "icon": "👢",
+      "type": "boots",
+      "tier": 2,
+      "color": "#92400e",
+      "basePrice": 110,
+      "desc": "速度+0.6",
+      "size": [
+        1,
+        2
+      ],
+      "spd": 0.6
+    },
+    {
+      "id": "boot3",
+      "name": "SWIFT TREADS",
+      "icon": "🥾",
+      "type": "boots",
+      "tier": 3,
+      "color": "#0891b2",
+      "basePrice": 200,
+      "desc": "速度+1.0",
+      "size": [
+        1,
+        2
+      ],
+      "spd": 1.0
+    },
+    {
+      "id": "boot4",
+      "name": "PHANTOM STEPS",
+      "icon": "👟",
+      "type": "boots",
+      "tier": 4,
+      "color": "#7c3aed",
+      "basePrice": 350,
+      "desc": "速度+1.6",
+      "size": [
+        1,
+        2
+      ],
+      "spd": 1.6
+    },
+    {
+      "id": "acc1",
+      "name": "COPPER RING",
+      "icon": "💍",
+      "type": "acc",
+      "tier": 1,
+      "color": "#78716c",
+      "basePrice": 80,
+      "desc": "生命+15",
+      "size": [
+        1,
+        1
+      ],
+      "maxHp": 15.0
+    },
+    {
+      "id": "acc2",
+      "name": "SILVER AMULET",
+      "icon": "📿",
+      "type": "acc",
+      "tier": 2,
+      "color": "#94a3b8",
+      "basePrice": 160,
+      "desc": "生命+30",
+      "size": [
+        1,
+        1
+      ],
+      "maxHp": 30.0
+    },
+    {
+      "id": "acc3",
+      "name": "GOLD PENDANT",
+      "icon": "🏅",
+      "type": "acc",
+      "tier": 3,
+      "color": "#f59e0b",
+      "basePrice": 280,
+      "desc": "生命+50·经验+20%",
+      "size": [
+        1,
+        1
+      ],
+      "maxHp": 50.0,
+      "xpBonus": 0.2
+    },
+    {
+      "id": "acc4",
+      "name": "SOUL CRYSTAL",
+      "icon": "💎",
+      "type": "acc",
+      "tier": 4,
+      "color": "#22d3ee",
+      "basePrice": 500,
+      "desc": "生命+80·经验+40%",
+      "size": [
+        1,
+        1
+      ],
+      "maxHp": 80.0,
+      "xpBonus": 0.4
+    }
+  ],
+  "crystals": [
+    {
+      "id": "crystal_fire_1",
+      "name": "粗糙灵晶·炎",
+      "icon": "🔴",
+      "type": "crystal",
+      "elem": "fire",
+      "tier": 1,
+      "dmgMult": 1.0,
+      "color": "#f97316",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 15,
+      "desc": "伤害×1"
+    },
+    {
+      "id": "crystal_fire_2",
+      "name": "精制灵晶·炎",
+      "icon": "🔴",
+      "type": "crystal",
+      "elem": "fire",
+      "tier": 2,
+      "dmgMult": 1.4,
+      "color": "#f97316",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 35,
+      "desc": "伤害×1.4"
+    },
+    {
+      "id": "crystal_fire_3",
+      "name": "纯化灵晶·炎",
+      "icon": "🔴",
+      "type": "crystal",
+      "elem": "fire",
+      "tier": 3,
+      "dmgMult": 2.0,
+      "color": "#f97316",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 70,
+      "desc": "伤害×2"
+    },
+    {
+      "id": "crystal_fire_4",
+      "name": "至纯灵晶·炎",
+      "icon": "🔴",
+      "type": "crystal",
+      "elem": "fire",
+      "tier": 4,
+      "dmgMult": 3.5,
+      "color": "#f97316",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 150,
+      "desc": "伤害×3.5"
+    },
+    {
+      "id": "crystal_ice_1",
+      "name": "粗糙灵晶·冰",
+      "icon": "🔵",
+      "type": "crystal",
+      "elem": "ice",
+      "tier": 1,
+      "dmgMult": 1.0,
+      "color": "#67e8f9",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 15,
+      "desc": "伤害×1"
+    },
+    {
+      "id": "crystal_ice_2",
+      "name": "精制灵晶·冰",
+      "icon": "🔵",
+      "type": "crystal",
+      "elem": "ice",
+      "tier": 2,
+      "dmgMult": 1.4,
+      "color": "#67e8f9",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 35,
+      "desc": "伤害×1.4"
+    },
+    {
+      "id": "crystal_ice_3",
+      "name": "纯化灵晶·冰",
+      "icon": "🔵",
+      "type": "crystal",
+      "elem": "ice",
+      "tier": 3,
+      "dmgMult": 2.0,
+      "color": "#67e8f9",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 70,
+      "desc": "伤害×2"
+    },
+    {
+      "id": "crystal_ice_4",
+      "name": "至纯灵晶·冰",
+      "icon": "🔵",
+      "type": "crystal",
+      "elem": "ice",
+      "tier": 4,
+      "dmgMult": 3.5,
+      "color": "#67e8f9",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 150,
+      "desc": "伤害×3.5"
+    },
+    {
+      "id": "crystal_thunder_1",
+      "name": "粗糙灵晶·雷",
+      "icon": "🟡",
+      "type": "crystal",
+      "elem": "thunder",
+      "tier": 1,
+      "dmgMult": 1.0,
+      "color": "#fbbf24",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 15,
+      "desc": "伤害×1"
+    },
+    {
+      "id": "crystal_thunder_2",
+      "name": "精制灵晶·雷",
+      "icon": "🟡",
+      "type": "crystal",
+      "elem": "thunder",
+      "tier": 2,
+      "dmgMult": 1.4,
+      "color": "#fbbf24",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 35,
+      "desc": "伤害×1.4"
+    },
+    {
+      "id": "crystal_thunder_3",
+      "name": "纯化灵晶·雷",
+      "icon": "🟡",
+      "type": "crystal",
+      "elem": "thunder",
+      "tier": 3,
+      "dmgMult": 2.0,
+      "color": "#fbbf24",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 70,
+      "desc": "伤害×2"
+    },
+    {
+      "id": "crystal_thunder_4",
+      "name": "至纯灵晶·雷",
+      "icon": "🟡",
+      "type": "crystal",
+      "elem": "thunder",
+      "tier": 4,
+      "dmgMult": 3.5,
+      "color": "#fbbf24",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 150,
+      "desc": "伤害×3.5"
+    },
+    {
+      "id": "crystal_void_1",
+      "name": "粗糙灵晶·虚空",
+      "icon": "🟣",
+      "type": "crystal",
+      "elem": "void",
+      "tier": 1,
+      "dmgMult": 1.0,
+      "color": "#a855f7",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 15,
+      "desc": "伤害×1"
+    },
+    {
+      "id": "crystal_void_2",
+      "name": "精制灵晶·虚空",
+      "icon": "🟣",
+      "type": "crystal",
+      "elem": "void",
+      "tier": 2,
+      "dmgMult": 1.4,
+      "color": "#a855f7",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 35,
+      "desc": "伤害×1.4"
+    },
+    {
+      "id": "crystal_void_3",
+      "name": "纯化灵晶·虚空",
+      "icon": "🟣",
+      "type": "crystal",
+      "elem": "void",
+      "tier": 3,
+      "dmgMult": 2.0,
+      "color": "#a855f7",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 70,
+      "desc": "伤害×2"
+    },
+    {
+      "id": "crystal_void_4",
+      "name": "至纯灵晶·虚空",
+      "icon": "🟣",
+      "type": "crystal",
+      "elem": "void",
+      "tier": 4,
+      "dmgMult": 3.5,
+      "color": "#a855f7",
+      "size": [
+        1,
+        1
+      ],
+      "stackMax": 99,
+      "basePrice": 150,
+      "desc": "伤害×3.5"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "shade",
+      "name": "SHADE",
+      "hp": 65.0,
+      "spd": 1.3,
+      "dmg": 9.0,
+      "color": "#6366f1",
+      "r": 12.0,
+      "xp": 20.0,
+      "aggroRange": 200.0,
+      "attackRate": 1.1,
+      "ranged": false,
+      "range": 60.0,
+      "drop_wand_ids": [],
+      "drop_armor_ids": [],
+      "drop_crystal_tiers": [
+        1,
+        2
+      ],
+      "drop_wand_chance": 0.2,
+      "drop_armor_chance": 0.15,
+      "drop_crystal_min": 2
+    },
+    {
+      "id": "wraith",
+      "name": "WRAITH",
+      "hp": 130.0,
+      "spd": 0.9,
+      "dmg": 15.0,
+      "color": "#a855f7",
+      "r": 16.0,
+      "xp": 40.0,
+      "aggroRange": 220.0,
+      "attackRate": 1.0,
+      "ranged": false,
+      "range": 60.0,
+      "drop_wand_ids": [],
+      "drop_armor_ids": [],
+      "drop_crystal_tiers": [
+        1,
+        2,
+        3
+      ],
+      "drop_wand_chance": 0.25,
+      "drop_armor_chance": 0.2,
+      "drop_crystal_min": 2
+    },
+    {
+      "id": "golem",
+      "name": "GOLEM",
+      "hp": 320.0,
+      "spd": 0.45,
+      "dmg": 28.0,
+      "color": "#78716c",
+      "r": 22.0,
+      "xp": 100.0,
+      "aggroRange": 180.0,
+      "attackRate": 0.7,
+      "ranged": false,
+      "range": 60.0,
+      "drop_wand_ids": [],
+      "drop_armor_ids": [
+        "robe3",
+        "robe4"
+      ],
+      "drop_crystal_tiers": [
+        2,
+        3
+      ],
+      "drop_wand_chance": 0.3,
+      "drop_armor_chance": 0.4,
+      "drop_crystal_min": 3
+    },
+    {
+      "id": "specter",
+      "name": "SPECTER",
+      "hp": 50.0,
+      "spd": 2.3,
+      "dmg": 6.0,
+      "color": "#22d3ee",
+      "r": 9.0,
+      "xp": 15.0,
+      "aggroRange": 240.0,
+      "attackRate": 1.3,
+      "ranged": false,
+      "range": 60.0,
+      "drop_wand_ids": [],
+      "drop_armor_ids": [],
+      "drop_crystal_tiers": [
+        1
+      ],
+      "drop_wand_chance": 0.1,
+      "drop_armor_chance": 0.1,
+      "drop_crystal_min": 1
+    },
+    {
+      "id": "cultist",
+      "name": "CULTIST",
+      "hp": 95.0,
+      "spd": 1.0,
+      "dmg": 19.0,
+      "color": "#dc2626",
+      "r": 14.0,
+      "xp": 35.0,
+      "aggroRange": 210.0,
+      "attackRate": 1.0,
+      "ranged": false,
+      "range": 60.0,
+      "drop_wand_ids": [
+        "poison"
+      ],
+      "drop_armor_ids": [
+        "robe2"
+      ],
+      "drop_crystal_tiers": [
+        1,
+        2
+      ],
+      "drop_wand_chance": 0.35,
+      "drop_armor_chance": 0.25,
+      "drop_crystal_min": 2
+    },
+    {
+      "id": "archer",
+      "name": "ARCHER",
+      "hp": 70.0,
+      "spd": 0.8,
+      "dmg": 14.0,
+      "color": "#f59e0b",
+      "r": 11.0,
+      "xp": 30.0,
+      "aggroRange": 300.0,
+      "attackRate": 0.9,
+      "ranged": true,
+      "range": 200.0,
+      "drop_wand_ids": [
+        "frost"
+      ],
+      "drop_armor_ids": [
+        "boot2"
+      ],
+      "drop_crystal_tiers": [
+        1,
+        2
+      ],
+      "drop_wand_chance": 0.4,
+      "drop_armor_chance": 0.2,
+      "drop_crystal_min": 2
+    }
+  ],
+  "wand_elem_map": {
+    "ember": "fire",
+    "frost": "ice",
+    "thunder": "thunder",
+    "void": "void",
+    "nature": "void",
+    "ancient": "fire",
+    "poison": "void",
+    "blood": "fire"
+  },
+  "config": {
+    "ENEMY_INITIAL": 15,
+    "ENEMY_MAX": 30,
+    "ENEMY_RESPAWN": 2,
+    "PLAYER_HP": 100,
+    "PLAYER_SPD": 2.9,
+    "PLAYER_START_GOLD": 1000,
+    "PICKUP_RANGE": 50,
+    "CHEST_B_COUNT": 10,
+    "CHEST_A_COUNT": 8,
+    "CHEST_S_COUNT": 5,
+    "MARKET_PRICE_VARIANCE": 0.4
+  }
+}
