@@ -965,16 +965,22 @@ function genMap(){
   {
     const PX = MAP_W * 0.35, PZ = MAP_H * 0.38;
     const PW = TILE * 8,     PD = TILE * 6;
-    const RW = TILE * 2;  // 斜坡格数（tile 循环只需跳过平台核心）
+    const RW = TILE * 2;
     const c0=Math.floor((PX-PW/2)/TILE), c1=Math.ceil((PX+PW/2)/TILE);
     const r0=Math.floor((PZ-PD/2)/TILE), r1=Math.ceil((PZ+PD/2)/TILE);
-    // 平台核心区：elevMap=2（用2区分"独立平台"，tile循环跳过）
+    // 平台核心区：elevMap=2，heightMap=1.0（玩家站上去 y = PH）
     for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++){
-      if(r>=0&&r<ROWS&&c>=0&&c<COLS) elevMap[r][c]=2;
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS){ elevMap[r][c]=2; heightMap[r][c]=1.0; }
     }
-    // 斜坡区：elevMap=3（tile循环也跳过，由3D物件自己渲染地面）
+    // 斜坡区：elevMap=3，heightMap 渐变 0→1
     for(let r=r0-2;r<r1+2;r++) for(let c=c0-2;c<c1+2;c++){
-      if(r>=0&&r<ROWS&&c>=0&&c<COLS&&elevMap[r][c]===0) elevMap[r][c]=3;
+      if(r<0||r>=ROWS||c<0||c>=COLS||elevMap[r][c]!==0) continue;
+      elevMap[r][c]=3;
+      const wx=(c+0.5)*TILE, wz=(r+0.5)*TILE;
+      const dx=Math.max(0,Math.abs(wx-PX)-PW/2);
+      const dz=Math.max(0,Math.abs(wz-PZ)-PD/2);
+      const dd=Math.max(dx,dz);
+      heightMap[r][c]=Math.max(0, 1 - dd/RW);
     }
   }
   genScatter();
@@ -2610,11 +2616,11 @@ function buildMap3() {
         plat.position.set(cx, PLAT_H/2, cz);
         add(plat);
 
-      } else if (elv >= 2) {
-        // 独立平台区域：由 buildPlatform3D 负责渲染，tile循环跳过
+      } else if (elv === 2) {
+        // 平台核心区：由 buildPlatform3D 负责，跳过
         continue;
       } else {
-        // 普通地面
+        // 普通地面（含斜坡区 elv==3，正常铺地板）
         const m = new THREE.Mesh(new THREE.BoxGeometry(U, SLAB, U), MAT3.floor);
         m.position.set(cx, -SLAB/2, cz);
         add(m);
@@ -2632,6 +2638,7 @@ function buildMap3() {
     const PW  = U * 8;             // 平台宽 X
     const PD  = U * 6;             // 平台深 Z
     const PH  = U * 0.9;           // 平台高度（≈36单位 ≈ 2倍角色身高，清晰可见）
+    window._PLATFORM_PH = PH;     // 暴露给 getWorldY3 使用
     const RW  = U * 2;             // 斜坡水平延伸距离（2格）
 
     const matTop  = new THREE.MeshLambertMaterial({ color: 0x243c54 });
@@ -2705,10 +2712,15 @@ function buildMap3() {
     // rotY=PI     → -Z 方向延伸（北面斜坡）
     // rotY=-PI/2  → +X 方向延伸（东面斜坡）
     // rotY=+PI/2  → -X 方向延伸（西面斜坡）
-    makeWedge(PX,       PZ + PD/2,  PW, 0);            // 南
-    makeWedge(PX,       PZ - PD/2,  PW, Math.PI);      // 北
-    makeWedge(PX + PW/2, PZ,        PD, -Math.PI/2);   // 东
-    makeWedge(PX - PW/2, PZ,        PD,  Math.PI/2);   // 西
+    // 斜坡从各边缘出发，沿 rotY 方向的 +Z 局部轴延伸
+    // rotY=0:     局部+Z = 世界+Z（南）
+    // rotY=PI:    局部+Z = 世界-Z（北）
+    // rotY=PI/2:  局部+Z = 世界-X（西）  → 东面用 PI/2 让楔形朝东
+    // rotY=-PI/2: 局部+Z = 世界+X（东）  → 西面用 -PI/2 让楔形朝西
+    makeWedge(PX,        PZ + PD/2, PW,  0);           // 南
+    makeWedge(PX,        PZ - PD/2, PW,  Math.PI);     // 北
+    makeWedge(PX + PW/2, PZ,        PD,  Math.PI/2);   // 东（局部+Z → 世界+X）
+    makeWedge(PX - PW/2, PZ,        PD, -Math.PI/2);   // 西（局部+Z → 世界-X）
 
     // elevMap 已在 genMap() 中写入，此处无需重复
   })();
@@ -2801,8 +2813,11 @@ function getWorldY3(wx, wy) {
   const fc = c - ic, fr = r - ir;
   function gh(rr, cc) {
     if (rr<0||rr>=ROWS||cc<0||cc>=COLS) return 0;
-    const h = heightMap[rr]?.[cc] || 0;
-    return h * PLAT_H;
+    const elv = elevMap[rr]?.[cc] || 0;
+    const h   = heightMap[rr]?.[cc] || 0;
+    // elevMap>=2 是独立平台，用实际平台高度
+    const platH = (window._PLATFORM_PH || PLAT_H);
+    return elv >= 2 ? h * platH : h * PLAT_H;
   }
   return gh(ir,ic)*(1-fc)*(1-fr) + gh(ir,ic+1)*fc*(1-fr)
        + gh(ir+1,ic)*(1-fc)*fr   + gh(ir+1,ic+1)*fc*fr;
